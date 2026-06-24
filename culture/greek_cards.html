@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Греческие слова</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--tg-theme-bg-color, #ffffff);
+    color: var(--tg-theme-text-color, #000000);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    user-select: none;
+  }
+
+  .progress-bar-wrap {
+    width: 100%;
+    max-width: 400px;
+    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    border-radius: 8px;
+    height: 6px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--tg-theme-button-color, #2481cc);
+    border-radius: 8px;
+    transition: width 0.3s ease;
+  }
+
+  .progress-text {
+    font-size: 13px;
+    color: var(--tg-theme-hint-color, #999);
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .card-wrap {
+    width: 100%;
+    max-width: 400px;
+    height: 220px;
+    perspective: 1000px;
+    margin-bottom: 1.5rem;
+    cursor: pointer;
+  }
+
+  .card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+
+  .card-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    background: var(--tg-theme-secondary-bg-color, #f8f8f8);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 2rem;
+  }
+
+  .card-face.back { transform: rotateY(180deg); }
+
+  .word {
+    font-size: 26px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--tg-theme-text-color, #000);
+  }
+
+  .hint {
+    font-size: 13px;
+    color: var(--tg-theme-hint-color, #999);
+  }
+
+  .translation {
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--tg-theme-text-color, #000);
+  }
+
+  .original-back {
+    font-size: 14px;
+    color: var(--tg-theme-hint-color, #999);
+    text-align: center;
+  }
+
+  .btns {
+    display: none;
+    gap: 10px;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 1rem;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .btn:active { opacity: 0.7; }
+
+  .btn-again {
+    background: #ff6b6b22;
+    color: #cc3333;
+  }
+
+  .btn-know {
+    background: #2ecc7122;
+    color: #1a8a4a;
+  }
+
+  .btn-next {
+    width: 100%;
+    max-width: 400px;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    background: var(--tg-theme-button-color, #2481cc);
+    color: var(--tg-theme-button-text-color, #ffffff);
+    cursor: pointer;
+    display: none;
+  }
+
+  .btn-next:active { opacity: 0.8; }
+
+  .done {
+    text-align: center;
+    padding: 3rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .done-emoji { font-size: 52px; }
+
+  .done-title {
+    font-size: 22px;
+    font-weight: 600;
+  }
+
+  .done-sub {
+    font-size: 14px;
+    color: var(--tg-theme-hint-color, #999);
+  }
+
+  .btn-restart {
+    margin-top: 1rem;
+    padding: 14px 32px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    background: var(--tg-theme-button-color, #2481cc);
+    color: var(--tg-theme-button-text-color, #ffffff);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" id="progressBar" style="width:0%"></div>
+  </div>
+  <div class="progress-text" id="progressText"></div>
+
+  <div class="card-wrap" onclick="flip()">
+    <div class="card-inner" id="cardInner">
+      <div class="card-face front">
+        <div class="word" id="wordEl"></div>
+        <div class="hint">нажми чтобы увидеть перевод</div>
+      </div>
+      <div class="card-face back">
+        <div class="translation" id="transEl"></div>
+        <div class="original-back" id="origEl"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btns" id="btns">
+    <button class="btn btn-again" onclick="answer(false)">← Ещё раз</button>
+    <button class="btn btn-know" onclick="answer(true)">Знаю ✓</button>
+  </div>
+
+  <button class="btn-next" id="btnNext" onclick="next()">Следующее →</button>
+</div>
+
+<script>
+if (window.Telegram && window.Telegram.WebApp) {
+  window.Telegram.WebApp.ready();
+  window.Telegram.WebApp.expand();
+}
+
+const words = [
+  {w:"ανακοινώνω", t:"объявлять, сообщать"},
+  {w:"αναλαμβάνω", t:"брать на себя, принимать (обязанности)"},
+  {w:"ανασχηματισμός, ο", t:"перестановка в правительстве"},
+  {w:"αντικατάσταση, η", t:"замена, замещение"},
+  {w:"αξίωμα, το", t:"должность, звание"},
+  {w:"αποχώρηση, η", t:"уход, выход"},
+  {w:"αρμοδιότητα, η", t:"компетенция, полномочие"},
+  {w:"αρχικός, -ή, -ό", t:"начальный, первоначальный"},
+  {w:"ανώτατος, -η, -ο", t:"высший, верховный"},
+  {w:"αναίρεση, η", t:"отмена, кассация"},
+  {w:"ασκώ", t:"осуществлять, выполнять"},
+  {w:"βουλή, η", t:"парламент (греческий)"},
+  {w:"διεθνής, -ής, -ές", t:"международный"},
+  {w:"διεξάγω", t:"проводить, осуществлять"},
+  {w:"διορίζω", t:"назначать"},
+  {w:"έδρα, η", t:"место (в парламенте), мандат"},
+  {w:"εκλογή, η", t:"выборы"},
+  {w:"εκπροσωπώ", t:"представлять"},
+  {w:"ελεγκτής, ο", t:"контролёр, аудитор"},
+  {w:"επίσημα", t:"официально"},
+  {w:"επίτροπος, ο/η", t:"уполномоченный, комиссар"},
+  {w:"θεσμικός, -ή, -ό", t:"институциональный"},
+  {w:"θητεία, η", t:"срок полномочий"},
+  {w:"ισχύω", t:"действовать, иметь силу"},
+  {w:"καθήκον, το", t:"обязанность, долг"},
+  {w:"κάθε πότε", t:"как часто, время от времени"},
+  {w:"κατώτερος, -η, -ο", t:"низший, нижестоящий"},
+  {w:"κοινοβούλιο, το", t:"парламент"},
+  {w:"κόμμα, το", t:"партия"},
+  {w:"περιλαμβάνω", t:"включать, содержать"},
+  {w:"πρόεδρος, ο/η", t:"президент, председатель"},
+  {w:"προεδρικός, -ή, -ό", t:"президентский"},
+  {w:"προσωρινός, -ή, -ό", t:"временный"},
+  {w:"συνεχόμενος, -η, -ο", t:"последовательный, непрерывный"},
+  {w:"υπεύθυνος, -η, -ο", t:"ответственный"},
+  {w:"υπηρετώ", t:"служить, занимать должность"},
+  {w:"υπουργός, ο", t:"министр"},
+];
+
+let deck, again, idx, known, flipped;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function init() {
+  deck = shuffle(words);
+  again = [];
+  idx = 0;
+  known = 0;
+  flipped = false;
+  document.getElementById('app').innerHTML = getAppHTML();
+  show();
+}
+
+function getAppHTML() {
+  return `
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+    <div class="progress-text" id="progressText"></div>
+    <div class="card-wrap" onclick="flip()">
+      <div class="card-inner" id="cardInner">
+        <div class="card-face front">
+          <div class="word" id="wordEl"></div>
+          <div class="hint">нажми чтобы увидеть перевод</div>
+        </div>
+        <div class="card-face back">
+          <div class="translation" id="transEl"></div>
+          <div class="original-back" id="origEl"></div>
+        </div>
+      </div>
+    </div>
+    <div class="btns" id="btns">
+      <button class="btn btn-again" onclick="answer(false)">← Ещё раз</button>
+      <button class="btn btn-know" onclick="answer(true)">Знаю ✓</button>
+    </div>
+    <button class="btn-next" id="btnNext" onclick="next()">Следующее →</button>
+  `;
+}
+
+function show() {
+  if (idx >= deck.length) {
+    if (again.length === 0) { finish(); return; }
+    deck = shuffle(again);
+    again = [];
+    idx = 0;
+  }
+  const c = deck[idx];
+  document.getElementById('wordEl').textContent = c.w;
+  document.getElementById('transEl').textContent = c.t;
+  document.getElementById('origEl').textContent = c.w;
+  document.getElementById('cardInner').classList.remove('flipped');
+  document.getElementById('btns').style.display = 'none';
+  document.getElementById('btnNext').style.display = 'none';
+  flipped = false;
+  updateProgress();
+}
+
+function flip() {
+  if (flipped) return;
+  flipped = true;
+  document.getElementById('cardInner').classList.add('flipped');
+  document.getElementById('btns').style.display = 'flex';
+  if (window.Telegram && window.Telegram.WebApp) {
+    window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+  }
+}
+
+function answer(know) {
+  if (know) {
+    known++;
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    }
+  } else {
+    again.push(deck[idx]);
+  }
+  document.getElementById('btns').style.display = 'none';
+  document.getElementById('btnNext').style.display = 'block';
+  idx++;
+}
+
+function next() { show(); }
+
+function updateProgress() {
+  const pct = Math.round((known / words.length) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressText').textContent = known + ' из ' + words.length + ' выучено';
+}
+
+function finish() {
+  document.getElementById('app').innerHTML = `
+    <div class="done">
+      <div class="done-emoji">🎉</div>
+      <div class="done-title">Отлично!</div>
+      <div class="done-sub">Все ${words.length} слов пройдены</div>
+      <button class="btn-restart" onclick="init()">Начать заново</button>
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
