@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Greek Words</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --lime: #c5f135;
+    --lime-dark: #9dc420;
+    --lime-bg: #f2fad4;
+    --bg: #f0efe9;
+    --surface: #ffffff;
+    --text: #111111;
+    --text2: #444444;
+    --muted: #aaaaaa;
+    --border: #e4e2d8;
+    --border2: #d0cec4;
+    --red-bg: #fff1f0;
+    --red: #d93025;
+    --green-bg: #f0faf3;
+    --green: #1a7a3c;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1rem 2rem;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .screen { display: none; flex-direction: column; flex: 1; }
+  .screen.active { display: flex; }
+
+  /* ── DECK SCREEN ── */
+  .screen-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.1;
+    margin-bottom: 0.25rem;
+  }
+  .screen-title em {
+    font-style: normal;
+    background: var(--lime);
+    padding: 0 6px;
+    border-radius: 6px;
+  }
+  .screen-sub { font-size: 14px; color: var(--muted); margin-bottom: 2rem; margin-top: 0.4rem; }
+
+  .deck-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.12s, border-color 0.12s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .deck-card:active { transform: scale(0.98); border-color: var(--lime-dark); }
+  .deck-name { font-size: 16px; font-weight: 700; color: var(--text); }
+  .deck-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  .deck-arrow {
+    width: 32px; height: 32px;
+    background: var(--lime);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: #111;
+    flex-shrink: 0;
+  }
+
+  /* ── TOP BAR ── */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .back-btn {
+    font-size: 13px; font-weight: 700;
+    color: var(--muted); cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .round-badge {
+    font-size: 11px; font-weight: 800;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: var(--lime);
+    color: #111;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .counter { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+  /* ── PROGRESS ── */
+  .progress-wrap {
+    width: 100%; height: 6px;
+    background: var(--border);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--lime);
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* ── CARD ── */
+  .card-wrap {
+    width: 100%;
+    height: 140px;
+    perspective: 1200px;
+    margin-bottom: 1.25rem;
+    cursor: pointer;
+  }
+  .card-inner {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+  .card-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute; width: 100%; height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 18px;
+  }
+
+  .card-face.front {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    gap: 1rem;
+  }
+  .front-text { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+  .word {
+    font-size: 24px; font-weight: 800;
+    color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tap-hint {
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  }
+  .flip-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--lime-bg);
+    border: 1.5px solid var(--lime);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; color: var(--lime-dark);
+  }
+
+  .card-face.back {
+    background: var(--lime-bg);
+    border: 1.5px solid var(--lime);
+    transform: rotateY(180deg);
+    box-shadow: 0 4px 16px rgba(157, 196, 32, 0.15);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    gap: 1rem;
+  }
+  .back-text { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+  .translation {
+    font-size: 22px; font-weight: 800;
+    color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .original-back { font-size: 12px; color: var(--text2); }
+  .flip-back-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(157,196,32,0.15);
+    border: 1.5px solid var(--lime);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; color: var(--lime-dark);
+  }
+
+  /* ── BUTTONS ── */
+  .btns { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .btns-main { display: flex; gap: 8px; width: 100%; }
+
+  .btn {
+    flex: 1; padding: 14px 6px;
+    border: 1.5px solid; border-radius: 14px;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-emoji { font-size: 20px; }
+
+  .btn-again {
+    background: #ffe4f0;
+    color: #c0185a;
+    border-color: #f9b8d4;
+  }
+  .btn-ok {
+    background: var(--lime-bg);
+    color: var(--lime-dark);
+    border-color: var(--lime);
+  }
+
+  .btn-star-wrap { width: 100%; }
+  .btn-star {
+    background: #f2f1ec;
+    border: 1.5px solid var(--border2);
+    cursor: pointer;
+    padding: 11px 16px;
+    border-radius: 12px;
+    display: flex; align-items: center;
+    gap: 6px; width: 100%;
+    justify-content: center;
+    font-size: 13px; font-weight: 700;
+    color: var(--muted);
+    transition: transform 0.1s;
+  }
+  .btn-star:active { transform: scale(0.97); }
+
+  .queue-info {
+    font-size: 12px; color: var(--muted);
+    text-align: center; margin-top: 0.5rem;
+  }
+
+  /* ── ROUND END ── */
+  .round-end {
+    display: flex; flex-direction: column;
+    align-items: center; text-align: center;
+    padding: 2rem 0; gap: 0.6rem;
+    flex: 1; justify-content: center;
+  }
+  .round-end-emoji { font-size: 56px; margin-bottom: 0.5rem; }
+  .round-end-title { font-size: 26px; font-weight: 800; color: var(--text); }
+  .round-end-sub { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  .btn-primary {
+    margin-top: 1.5rem; padding: 15px 32px;
+    border: none; border-radius: 14px;
+    font-size: 15px; font-weight: 800;
+    background: var(--lime); color: #111;
+    cursor: pointer; width: 100%;
+    transition: opacity 0.1s;
+  }
+  .btn-primary:active { opacity: 0.85; }
+
+  .btn-secondary {
+    margin-top: 0.5rem; padding: 14px 32px;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    font-size: 15px; font-weight: 700;
+    background: transparent; color: var(--muted);
+    cursor: pointer; width: 100%;
+  }
+
+  /* ── DONE ── */
+  .done-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; }
+  .done-title { font-size: 22px; font-weight: 800; }
+  .done-sub { font-size: 13px; color: var(--muted); margin-bottom: 1rem; }
+
+  .mastered-list { display: flex; flex-direction: column; }
+  .mastered-item {
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .mastered-item:last-child { border-bottom: none; }
+  .mastered-word { font-size: 15px; font-weight: 700; color: var(--text); }
+  .mastered-trans { font-size: 13px; color: var(--muted); text-align: right; }
+  .mastered-star { display: none; }
+
+  .btn-mastered {
+    margin-top: 0.75rem;
+    width: 100%;
+    padding: 1.2rem 1.4rem;
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: transform 0.12s;
+  }
+  .btn-mastered:active { transform: scale(0.98); }
+  .btn-mastered-name { font-size: 16px; font-weight: 700; color: var(--muted); }
+  .btn-mastered-meta { font-size: 12px; color: var(--muted); margin-top: 3px; font-weight: 400; }
+  .btn-mastered-arrow {
+    width: 32px; height: 32px;
+    background: var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: var(--muted);
+    flex-shrink: 0;
+  }
+  #screen-all-mastered { position: relative; }
+</style>
+</head>
+<body>
+
+<div class="screen active" id="screen-decks">
+  <div class="screen-title">Greek <em>Words</em></div>
+  <div class="screen-sub">Выбери колоду для повторения</div>
+  <div id="deck-list"></div>
+  <div id="mastered-btn-wrap"></div>
+</div>
+
+<div class="screen" id="screen-cards">
+  <div class="top-bar">
+    <div class="back-btn" onclick="goHome()">← Назад</div>
+    <div class="round-badge" id="roundBadge">греч → рус</div>
+    <div class="counter" id="counter"></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  <div class="card-wrap" onclick="handleCardClick()">
+    <div class="card-inner" id="cardInner">
+      <div class="card-face front">
+        <div class="front-text">
+          <div class="word" id="wordEl"></div>
+          <div class="tap-hint">нажми для перевода</div>
+        </div>
+        <div class="flip-btn">↩︎</div>
+      </div>
+      <div class="card-face back">
+        <div class="back-text">
+          <div class="translation" id="transEl"></div>
+          <div class="original-back" id="origEl"></div>
+        </div>
+        <div class="flip-back-btn">↩︎</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btns" id="btns">
+    <div class="btns-main">
+      <button class="btn btn-again" onclick="answer('again')">
+        <span class="btn-emoji">↺</span>Ещё раз
+      </button>
+      <button class="btn btn-ok" onclick="answer('ok')">
+        <span class="btn-emoji">✓</span>Помню
+      </button>
+    </div>
+    <div class="btn-star-wrap">
+      <button class="btn-star" onclick="answer('star')">
+        ★ В следующий раунд (рус → греч)
+      </button>
+    </div>
+  </div>
+  <div class="queue-info" id="queueInfo"></div>
+</div>
+
+<div class="screen" id="screen-round1-end">
+  <div class="round-end">
+    <div class="round-end-emoji">🎯</div>
+    <div class="round-end-title">Раунд 1 готов!</div>
+    <div class="round-end-sub" id="round1-sub"></div>
+    <button class="btn-primary" id="btn-start-round2" onclick="startRound2()">Перейти к рус → греч</button>
+    <button class="btn-secondary" onclick="goHome()">На главную</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-done">
+  <div class="done-header">
+    <div class="done-title">Выучено ★</div>
+    <div class="back-btn" onclick="goHome()">← Назад</div>
+  </div>
+  <div class="done-sub" id="done-sub"></div>
+  <div class="mastered-list" id="mastered-list"></div>
+  <button class="btn-primary" style="margin-top:1.5rem;" onclick="goHome()">На главную</button>
+</div>
+
+<!-- ЭКРАН: ВСЕ ВЫУЧЕННЫЕ СЛОВА -->
+<div class="screen" id="screen-all-mastered">
+  <div class="top-bar">
+    <div class="back-btn" onclick="goHome()">← Назад</div>
+    <div class="round-badge">Выучено</div>
+    <div class="counter" id="all-mastered-sub"></div>
+  </div>
+  <div class="progress-wrap" style="visibility:hidden;"></div>
+  <div class="mastered-list" id="all-mastered-list"></div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+// ── ЗВУК ПЕЧАТНОЙ МАШИНКИ ──
+function playClick() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.06, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.008));
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+  } catch(e) {}
+}
+
+const ROUND_SIZE = 30;
+
+const DECKS = [
+  {
+    id: 'culture',
+    name: 'Экзамен по культуре',
+    desc: 'История и культура Кипра · 37 слов',
+    words: [
+      {w:"ανακοινώνω", t:"объявлять, сообщать"},
+      {w:"αναλαμβάνω", t:"брать на себя, принимать"},
+      {w:"ανασχηματισμός, ο", t:"перестановка в правительстве"},
+      {w:"αντικατάσταση, η", t:"замена, замещение"},
+      {w:"αξίωμα, το", t:"должность, звание"},
+      {w:"αποχώρηση, η", t:"уход, выход"},
+      {w:"αρμοδιότητα, η", t:"компетенция, полномочие"},
+      {w:"αρχικός, -ή, -ό", t:"начальный, первоначальный"},
+      {w:"ανώτατος, -η, -ο", t:"высший, верховный"},
+      {w:"αναίρεση, η", t:"отмена, кассация"},
+      {w:"ασκώ", t:"осуществлять, выполнять"},
+      {w:"βουλή, η", t:"парламент (греческий)"},
+      {w:"διεθνής, -ής, -ές", t:"международный"},
+      {w:"διεξάγω", t:"проводить, осуществлять"},
+      {w:"διορίζω", t:"назначать"},
+      {w:"έδρα, η", t:"место в парламенте, мандат"},
+      {w:"εκλογή, η", t:"выборы"},
+      {w:"εκπροσωπώ", t:"представлять"},
+      {w:"ελεγκτής, ο", t:"контролёр, аудитор"},
+      {w:"επίσημα", t:"официально"},
+      {w:"επίτροπος, ο/η", t:"уполномоченный, комиссар"},
+      {w:"θεσμικός, -ή, -ό", t:"институциональный"},
+      {w:"θητεία, η", t:"срок полномочий"},
+      {w:"ισχύω", t:"действовать, иметь силу"},
+      {w:"καθήκον, το", t:"обязанность, долг"},
+      {w:"κάθε πότε", t:"как часто, время от времени"},
+      {w:"κατώτερος, -η, -ο", t:"низший, нижестоящий"},
+      {w:"κοινοβούλιο, το", t:"парламент"},
+      {w:"κόμμα, το", t:"партия"},
+      {w:"περιλαμβάνω", t:"включать, содержать"},
+      {w:"πρόεδρος, ο/η", t:"президент, председатель"},
+      {w:"προεδρικός, -ή, -ό", t:"президентский"},
+      {w:"προσωρινός, -ή, -ό", t:"временный"},
+      {w:"συνεχόμενος, -η, -ο", t:"последовательный, непрерывный"},
+      {w:"υπεύθυνος, -η, -ο", t:"ответственный"},
+      {w:"υπηρετώ", t:"служить, занимать должность"},
+      {w:"υπουργός, ο", t:"министр"},
+    ]
+  }
+];
+
+let currentDeck = null;
+let round = 1;
+let activeSlots = [];
+let waitingPool = [];
+let again = [];
+let starWords = [];
+let mastered = [];
+let idx = 0;
+let flipped = false;
+let doneInRound = 0;
+
+async function saveState(deckId) {
+  if (!tg?.CloudStorage) return;
+  const state = { activeSlots, waitingPool, again, starWords, mastered, idx, doneInRound, round };
+  tg.CloudStorage.setItem('state_' + deckId, JSON.stringify(state));
+}
+
+async function loadState(deckId) {
+  return new Promise(resolve => {
+    if (!tg?.CloudStorage) { resolve(null); return; }
+    tg.CloudStorage.getItem('state_' + deckId, (err, val) => {
+      if (err || !val) { resolve(null); return; }
+      try { resolve(JSON.parse(val)); } catch { resolve(null); }
+    });
+  });
+}
+
+async function saveMastered(deckId, words) {
+  if (!tg?.CloudStorage) return;
+  const existing = await loadMastered(deckId);
+  // добавляем новые слова, избегая дублей
+  const map = {};
+  [...existing, ...words].forEach(w => map[w.w] = w);
+  const merged = Object.values(map);
+  tg.CloudStorage.setItem('mastered_' + deckId, JSON.stringify(merged));
+}
+
+async function loadMastered(deckId) {
+  return new Promise(resolve => {
+    if (!tg?.CloudStorage) { resolve([]); return; }
+    tg.CloudStorage.getItem('mastered_' + deckId, (err, val) => {
+      if (err || !val) { resolve([]); return; }
+      try { resolve(JSON.parse(val)); } catch { resolve([]); }
+    });
+  });
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goHome() { showScreen('screen-decks'); }
+
+function clearState(deckId) {
+  if (tg?.CloudStorage) tg.CloudStorage.removeItem('state_' + deckId);
+}
+
+async function showAllMastered(deck_data) {
+  try {
+    const words = await Promise.race([
+      loadMastered(deck_data.id),
+      new Promise(resolve => setTimeout(() => resolve([]), 2000))
+    ]);
+    showScreen('screen-all-mastered');
+    const sub = document.getElementById('all-mastered-sub');
+    const list = document.getElementById('all-mastered-list');
+    list.innerHTML = '';
+    if (words.length === 0) {
+      sub.textContent = '';
+      list.innerHTML = `
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; width:100%;">
+          <div style="font-size:16px; font-weight:700; color:var(--muted);">Слов пока еще нет</div>
+        </div>`;
+    } else {
+      sub.textContent = `${words.length} из ${deck_data.words.length} слов`;
+      words.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'mastered-item';
+        el.innerHTML = `
+          <div>
+            <div class="mastered-word">${c.w}</div>
+            <div class="mastered-trans">${c.t}</div>
+          </div>
+          <div class="mastered-star">★</div>`;
+        list.appendChild(el);
+      });
+    }
+  } catch(e) {
+    showScreen('screen-all-mastered');
+  }
+}
+
+function renderDecks() {
+  const list = document.getElementById('deck-list');
+  list.innerHTML = '';
+  DECKS.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'deck-card';
+    el.innerHTML = `
+      <div>
+        <div class="deck-name">${d.name}</div>
+        <div class="deck-meta">${d.desc}</div>
+      </div>
+      <div class="deck-arrow">›</div>`;
+    el.onclick = () => startSession(d);
+    list.appendChild(el);
+  });
+
+  // Кнопка "Выучено" для каждой колоды
+  const wrap = document.getElementById('mastered-btn-wrap');
+  wrap.innerHTML = '';
+  DECKS.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-mastered';
+    btn.innerHTML = `<div><div class="btn-mastered-name">Выученные слова</div></div><div class="btn-mastered-arrow">›</div>`;
+    btn.onclick = () => showAllMastered(d);
+    wrap.appendChild(btn);
+  });
+}
+
+async function startSession(deck_data) {
+  try {
+    currentDeck = deck_data;
+    let saved = null;
+    try { saved = await loadState(deck_data.id); } catch(e) {}
+    if (saved?.activeSlots?.length > 0) {
+      ({ activeSlots, waitingPool, again, starWords, mastered, idx, doneInRound, round } = saved);
+      flipped = false;
+    } else {
+      round = 1;
+      const shuffled = shuffle([...deck_data.words]);
+      activeSlots = shuffled.slice(0, ROUND_SIZE);
+      waitingPool = shuffled.slice(ROUND_SIZE);
+      again = []; starWords = []; mastered = [];
+      idx = 0; flipped = false; doneInRound = 0;
+    }
+    document.getElementById('roundBadge').textContent = round === 1 ? 'греч → рус' : 'рус → греч';
+    showScreen('screen-cards');
+    showCard();
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
+  }
+}
+
+function startRound2() {
+  round = 2;
+  activeSlots = shuffle([...starWords]);
+  waitingPool = []; again = [];
+  idx = 0; flipped = false; doneInRound = 0;
+  document.getElementById('roundBadge').textContent = 'рус → греч';
+  showScreen('screen-cards');
+  showCard();
+}
+
+function showCard() {
+  if (again.length > 0 && idx >= activeSlots.length) {
+    activeSlots = [...activeSlots, ...again];
+    again = [];
+  }
+  if (idx >= activeSlots.length) { endRound(); return; }
+
+  const c = activeSlots[idx];
+  const cardInner = document.getElementById('cardInner');
+  const wasFlipped = cardInner.classList.contains('flipped');
+
+  const front = round === 1 ? c.w : c.t;
+  const back  = round === 1 ? c.t : c.w;
+  const backSub = round === 1 ? c.w : c.t;
+
+  document.getElementById('wordEl').textContent = front;
+  cardInner.style.transition = 'none';
+  cardInner.classList.remove('flipped');
+  flipped = false;
+  requestAnimationFrame(() => { cardInner.style.transition = ''; });
+  updateProgress();
+  updateQueueInfo();
+
+  if (wasFlipped) {
+    setTimeout(() => {
+      document.getElementById('transEl').textContent = back;
+      document.getElementById('origEl').textContent = backSub;
+    }, 460);
+  } else {
+    document.getElementById('transEl').textContent = back;
+    document.getElementById('origEl').textContent = backSub;
+  }
+}
+
+function handleCardClick() {
+  const cardInner = document.getElementById('cardInner');
+  if (!flipped) {
+    flipped = true;
+    cardInner.classList.add('flipped');
+  } else {
+    flipped = false;
+    cardInner.classList.remove('flipped');
+  }
+  if (tg) tg.HapticFeedback.impactOccurred('light');
+  playClick();
+}
+
+function answer(type) {
+  const c = activeSlots[idx];
+  if (type === 'again') {
+    again.push(c);
+  } else if (type === 'ok') {
+    doneInRound++;
+    if (waitingPool.length > 0) activeSlots.push(waitingPool.shift());
+  } else if (type === 'star') {
+    doneInRound++;
+    if (round === 1) {
+      starWords.push(c);
+      if (waitingPool.length > 0) activeSlots.push(waitingPool.shift());
+    } else {
+      mastered.push(c);
+    }
+  }
+  playClick();
+  if (tg) tg.HapticFeedback.impactOccurred('medium');
+  idx++;
+  saveState(currentDeck.id);
+  showCard();
+}
+
+function updateProgress() {
+  const total = currentDeck.words.length;
+  const pct = Math.round((doneInRound / total) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('counter').textContent = idx + ' / ' + activeSlots.length;
+}
+
+function updateQueueInfo() {
+  const info = document.getElementById('queueInfo');
+  info.textContent = waitingPool.length > 0 ? `В очереди ещё ${waitingPool.length} сл.` : '';
+}
+
+function endRound() {
+  if (round === 1) {
+    const sub = starWords.length > 0
+      ? `Отлично знаешь ${starWords.length} сл. — готовы к раунду рус → греч.`
+      : 'Нет слов для второго раунда. Попробуй ещё раз!';
+    document.getElementById('round1-sub').textContent = sub;
+    document.getElementById('btn-start-round2').style.display = starWords.length > 0 ? 'block' : 'none';
+    clearState(currentDeck.id);
+    showScreen('screen-round1-end');
+  } else {
+    document.getElementById('done-sub').textContent =
+      `Отличная работа! Выучено: ${mastered.length} из ${currentDeck.words.length}`;
+    const list = document.getElementById('mastered-list');
+    list.innerHTML = '';
+    mastered.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'mastered-item';
+      el.innerHTML = `
+        <div>
+          <div class="mastered-word">${c.w}</div>
+          <div class="mastered-trans">${c.t}</div>
+        </div>
+        <div class="mastered-star">★</div>`;
+      list.appendChild(el);
+    });
+    clearState(currentDeck.id);
+    if (mastered.length > 0) saveMastered(currentDeck.id, mastered);
+    showScreen('screen-done');
+  }
+}
+
+function shuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+renderDecks();
+</script>
+</body>
+</html>
