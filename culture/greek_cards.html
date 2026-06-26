@@ -203,14 +203,15 @@
   .card-wrap {
     width: 100%;
     flex: 1;
-    min-height: 200px;
+    height: 0;
     perspective: 1200px;
     margin-bottom: 20px;
     cursor: pointer;
     position: relative;
   }
   .card-inner {
-    position: absolute; inset: 0;
+    position: absolute;
+    inset: 0;
     transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
     transform-style: preserve-3d;
   }
