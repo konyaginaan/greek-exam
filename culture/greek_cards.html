@@ -156,20 +156,26 @@
   }
 
   /* ── CARDS SCREEN ── */
+  #screen-cards {
+    padding-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+  }
+
   .top-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 0 1rem;
+    padding: 20px 0 12px;
   }
   .back-btn {
-    font-size: 13px; font-weight: 700;
+    font-size: 12px; font-weight: 700;
     color: var(--muted); cursor: pointer;
-    text-transform: uppercase; letter-spacing: 0.06em;
+    text-transform: uppercase; letter-spacing: 0.08em;
   }
   .round-badge {
-    font-size: 11px; font-weight: 800;
-    padding: 5px 12px;
+    font-size: 12px; font-weight: 800;
+    padding: 6px 14px;
     border-radius: 20px;
     background: var(--lime);
     color: #111;
@@ -179,10 +185,10 @@
   .counter { font-size: 13px; color: var(--muted); font-weight: 600; }
 
   .progress-wrap {
-    width: 100%; height: 5px;
+    width: 100%; height: 4px;
     background: var(--border);
     border-radius: 10px;
-    margin-bottom: 1.5rem;
+    margin-bottom: 20px;
     overflow: hidden;
   }
   .progress-fill {
@@ -196,117 +202,130 @@
   /* ── FLASHCARD ── */
   .card-wrap {
     width: 100%;
-    min-height: 120px;
+    flex: 1;
+    min-height: 200px;
     perspective: 1200px;
-    margin-bottom: 1.25rem;
+    margin-bottom: 20px;
     cursor: pointer;
+    position: relative;
   }
   .card-inner {
-    position: relative; width: 100%; min-height: 120px;
-    transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+    position: absolute; inset: 0;
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
     transform-style: preserve-3d;
   }
   .card-inner.flipped { transform: rotateY(180deg); }
 
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+  .card-inner.shake { animation: shake 0.4s ease; }
+
+  @keyframes slideOut {
+    to { transform: translateX(120%) rotate(8deg); opacity: 0; }
+  }
+  .card-inner.slide-out { animation: slideOut 0.3s ease forwards; }
+
   .card-face {
-    position: absolute; width: 100%; height: 100%;
+    position: absolute; inset: 0;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    border-radius: 16px;
+    border-radius: 20px;
   }
+
+  /* FRONT */
   .card-face.front {
     background: var(--surface);
-    border: 1.5px solid var(--border);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-    display: flex; flex-direction: row;
-    align-items: center; justify-content: space-between;
-    padding: 1.25rem 1.5rem; gap: 1rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.75rem;
+    gap: 10px;
+    position: relative;
   }
-  .front-text { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+  .flip-corner {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid var(--lime);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--lime-dark);
+    background: transparent;
+  }
   .word {
-    font-size: 24px; font-weight: 800; color: var(--text);
+    font-size: 32px; font-weight: 800; color: var(--text);
     word-break: break-word; line-height: 1.2;
+    text-align: center;
   }
   .tap-hint {
     font-size: 11px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600;
-    margin-top: 4px;
+    font-style: italic; font-weight: 400;
+    text-align: center;
+    transition: opacity 0.3s;
   }
-  .flip-btn {
-    width: 38px; height: 38px; border-radius: 50%;
-    background: var(--lime-bg);
-    border: 1.5px solid var(--lime);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; flex-shrink: 0; color: var(--lime-dark);
-  }
-  .card-face {
-    width: 100%;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    border-radius: 16px;
-  }
-  .card-face.front {
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-    display: flex; flex-direction: row;
-    align-items: center; justify-content: space-between;
-    padding: 1.25rem 1.5rem; gap: 1rem;
-  }
+  .tap-hint.hidden { opacity: 0; }
+
+  /* BACK */
   .card-face.back {
-    background: var(--card-back);
-    border: 1.5px solid var(--border2);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-    display: flex; flex-direction: row;
-    align-items: center; justify-content: space-between;
-    padding: 1.25rem 1.5rem; gap: 1rem;
-    /* flip */
-    position: absolute; top: 0; left: 0;
+    background: #F5F5F5;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
     transform: rotateY(180deg);
-    height: 100%;
-    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.75rem;
+    gap: 8px;
   }
-  .back-text { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
   .translation {
-    font-size: 22px; font-weight: 800; color: var(--text);
+    font-size: 26px; font-weight: 800; color: var(--text);
     word-break: break-word; line-height: 1.2;
+    text-align: center;
   }
-  .original-back { font-size: 12px; color: var(--muted); }
-  .flip-back-btn {
-    width: 38px; height: 38px; border-radius: 50%;
-    background: var(--border);
-    border: 1.5px solid var(--border2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; flex-shrink: 0; color: var(--muted);
+  .original-back {
+    font-size: 14px; color: var(--muted);
+    text-align: center;
   }
 
   /* ── ANSWER BUTTONS ── */
-  .btns { display: flex; gap: 8px; width: 100%; margin-bottom: 0; }
+  .cards-bottom {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .btns { display: flex; gap: 10px; width: 100%; }
   .btn {
-    flex: 1; padding: 14px 6px;
-    border: 1.5px solid; border-radius: 14px;
-    font-size: 14px; font-weight: 700; cursor: pointer;
-    transition: transform 0.1s;
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    flex: 1; height: 64px;
+    border: none; border-radius: 16px;
+    font-size: 17px; font-weight: 700; cursor: pointer;
+    transition: transform 0.1s, opacity 0.1s;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
   }
   .btn:active { transform: scale(0.96); }
-  .btn-emoji { font-size: 20px; }
-  .btn-again { background: #ffe4f0; color: #c0185a; border-color: #f9b8d4; }
-  .btn-ok    { background: var(--lime-bg); color: var(--lime-dark); border-color: var(--lime); }
+  .btn-icon { font-size: 22px; line-height: 1; }
+  .btn-again { background: #FFD6E0; color: #CC3366; }
+  .btn-ok    { background: #E8F5A0; color: #4A7C00; }
 
   .btn-star {
-    margin-top: 8px;
-    width: 100%;
-    background: var(--disabled-bg);
+    background: none;
     border: none;
     cursor: pointer;
-    padding: 11px 16px;
-    border-radius: 12px;
-    font-size: 13px; font-weight: 700;
-    color: var(--disabled-text);
-    transition: transform 0.1s;
+    padding: 6px;
+    font-size: 13px; font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+    width: 100%;
   }
-  .btn-star:active { transform: scale(0.97); }
+  .btn-star:active { opacity: 0.6; }
 
   /* ── SCREENS: DONE, NO-STAR, ALL-MASTERED ── */
   .centered-screen {
@@ -384,27 +403,28 @@
   <div class="card-wrap" onclick="handleCardClick()">
     <div class="card-inner" id="cardInner">
       <div class="card-face front">
-        <div class="front-text">
-          <div class="word" id="wordEl"></div>
-          <div class="tap-hint">нажми для перевода</div>
-        </div>
-        <div class="flip-btn">↩︎</div>
+        <div class="flip-corner">↩︎</div>
+        <div class="word" id="wordEl"></div>
+        <div class="tap-hint" id="tapHint">нажми для перевода</div>
       </div>
       <div class="card-face back">
-        <div class="back-text">
-          <div class="translation" id="transEl"></div>
-          <div class="original-back" id="origEl"></div>
-        </div>
-        <div class="flip-back-btn">↩︎</div>
+        <div class="translation" id="transEl"></div>
+        <div class="original-back" id="origEl"></div>
       </div>
     </div>
   </div>
 
-  <div class="btns">
-    <button class="btn btn-again" onclick="answer('again')"><span class="btn-emoji">↺</span>Ещё раз</button>
-    <button class="btn btn-ok"    onclick="answer('ok')"   ><span class="btn-emoji">✓</span>Помню</button>
+  <div class="cards-bottom">
+    <div class="btns">
+      <button class="btn btn-again" onclick="answer('again')">
+        <span class="btn-icon">↺</span>Ещё раз
+      </button>
+      <button class="btn btn-ok" onclick="answer('ok')">
+        <span class="btn-icon">✓</span>Помню
+      </button>
+    </div>
+    <button class="btn-star" id="btn-star" onclick="answer('star')">★ Отложить в рус → греч</button>
   </div>
-  <button class="btn-star" id="btn-star" onclick="answer('star')">★ Отложить в рус → греч</button>
 </div>
 
 <!-- ══ NO STAR WORDS ══ -->
@@ -676,6 +696,9 @@ function showCard() {
   cardInner.style.transition = 'none';
   cardInner.classList.remove('flipped');
   flipped = false;
+  hasFlippedOnce = false;
+  const hint = document.getElementById('tapHint');
+  if (hint) hint.classList.remove('hidden');
   requestAnimationFrame(() => { cardInner.style.transition = ''; });
   updateProgress();
 
@@ -690,32 +713,55 @@ function showCard() {
   }
 }
 
+let hasFlippedOnce = false;
+
 function handleCardClick() {
   const cardInner = document.getElementById('cardInner');
   flipped = !flipped;
   cardInner.classList.toggle('flipped', flipped);
+  if (flipped && !hasFlippedOnce) {
+    hasFlippedOnce = true;
+    document.getElementById('tapHint')?.classList.add('hidden');
+  }
   if (tg) tg.HapticFeedback.impactOccurred('light');
 }
 
 function answer(type) {
   const c = activeSlots[idx];
+  const cardInner = document.getElementById('cardInner');
+
   if (type === 'again') {
     again.push(c);
-  } else if (type === 'ok') {
-    doneInRound++;
-  } else if (type === 'star') {
-    doneInRound++;
-    if (round === 1) {
-      starWords.push(c);
-      saveStarWords(currentDeck.id, [c]);
-    } else {
-      mastered.push(c);
-      saveMastered(currentDeck.id, [c]);
-    }
+    // Shake animation
+    cardInner.classList.add('shake');
+    setTimeout(() => cardInner.classList.remove('shake'), 400);
+    if (tg) tg.HapticFeedback.notificationOccurred('warning');
+    idx++;
+    setTimeout(() => showCard(), 420);
+    return;
   }
+
+  // Slide out for ok/star
+  cardInner.classList.add('slide-out');
+  setTimeout(() => {
+    cardInner.classList.remove('slide-out');
+    if (type === 'ok') {
+      doneInRound++;
+    } else if (type === 'star') {
+      doneInRound++;
+      if (round === 1) {
+        starWords.push(c);
+        saveStarWords(currentDeck.id, [c]);
+      } else {
+        mastered.push(c);
+        saveMastered(currentDeck.id, [c]);
+      }
+    }
+    idx++;
+    showCard();
+  }, 280);
+
   if (tg) tg.HapticFeedback.impactOccurred('medium');
-  idx++;
-  showCard();
 }
 
 function updateProgress() {
