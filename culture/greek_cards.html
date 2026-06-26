@@ -624,10 +624,25 @@ async function handleCTA() {
 }
 
 // ── SESSION ──
-function startSession(deck_data, startRound) {
+async function startSession(deck_data, startRound) {
   currentDeck = deck_data;
   round = startRound || 1;
-  const shuffled = shuffle([...deck_data.words]);
+
+  let wordsToUse = [...deck_data.words];
+
+  if (round === 1) {
+    // Убираем слова, уже отложенные в рус→греч
+    const starred = await Promise.race([
+      loadStarWords(deck_data.id),
+      new Promise(r => setTimeout(() => r([]), 2000))
+    ]);
+    if (starred && starred.length > 0) {
+      const starredSet = new Set(starred.map(w => w.w));
+      wordsToUse = wordsToUse.filter(w => !starredSet.has(w.w));
+    }
+  }
+
+  const shuffled = shuffle(wordsToUse);
   const size = Math.min(ROUND_SIZE, shuffled.length);
   activeSlots = shuffled.slice(0, size);
   again = []; starWords = []; mastered = [];
