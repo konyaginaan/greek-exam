@@ -62,38 +62,44 @@
     border: 1.5px solid var(--border);
     border-radius: 18px;
     padding: 1.2rem 1.4rem;
-    margin-bottom: 0.5rem;
-    cursor: pointer;
+    margin-bottom: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .deck-card-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    transition: transform 0.12s, border-color 0.12s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   }
-  .deck-card:active { transform: scale(0.98); border-color: var(--lime-dark); }
   .deck-name { font-size: 16px; font-weight: 700; color: var(--text); }
   .deck-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
-  .round-choice {
+  .deck-btns {
     display: flex;
-    gap: 6px;
-    margin-bottom: 1rem;
-    padding: 0 0.1rem;
+    gap: 8px;
   }
-  .round-choice-btn {
+  .deck-btn {
     flex: 1;
-    padding: 9px 6px;
+    padding: 10px 6px;
     border: 1.5px solid var(--border);
     border-radius: 12px;
-    background: var(--surface);
-    font-size: 12px;
+    background: var(--bg);
+    font-size: 13px;
     font-weight: 700;
     color: var(--text2);
     cursor: pointer;
     text-align: center;
-    transition: transform 0.1s, border-color 0.1s;
+    transition: transform 0.1s, border-color 0.1s, background 0.1s;
   }
-  .round-choice-btn:active { transform: scale(0.97); border-color: var(--lime-dark); }
+  .deck-btn:active { transform: scale(0.97); border-color: var(--lime-dark); background: var(--lime-bg); }
+  .deck-btn-primary {
+    background: var(--dark);
+    color: var(--lime);
+    border-color: var(--dark);
+  }
+  .deck-btn-primary:active { background: var(--dark2); }
 
   .deck-arrow {
     width: 32px; height: 32px;
@@ -394,19 +400,31 @@
     </div>
     <div class="btn-star-wrap">
       <button class="btn-star" onclick="answer('star')">
-        ★ В следующий раунд (рус → греч)
+        <span id="star-btn-label">★ Отложить в рус → греч</span>
       </button>
     </div>
   </div>
   <div class="queue-info" id="queueInfo"></div>
 </div>
 
-<div class="screen" id="screen-round1-end">
+<div class="screen" id="screen-no-star">
+  <div class="top-bar">
+    <div class="back-btn" onclick="goHome()">← Назад</div>
+    <div class="round-badge">рус → греч</div>
+    <div></div>
+  </div>
+  <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:0.75rem; padding: 0 1rem;">
+    <div style="font-size:48px;">📭</div>
+    <div style="font-size:18px; font-weight:800; color:var(--text);">Слов пока нет</div>
+    <div style="font-size:14px; color:var(--muted); line-height:1.6;">Сюда попадают слова, которые ты<br>отметил ★ в колоде греч → рус</div>
+    <button class="btn-primary" style="margin-top:1rem;" onclick="startSession(currentDeck,1)">Начать греч → рус</button>
+  </div>
+</div>
   <div class="round-end">
     <div class="round-end-emoji">🎯</div>
     <div class="round-end-title">Раунд 1 готов!</div>
     <div class="round-end-sub" id="round1-sub"></div>
-    <button class="btn-primary" id="btn-start-round2" onclick="startRound2()">Перейти к рус → греч</button>
+    <button class="btn-primary" id="btn-start-round2" onclick="startRound2FromSession()">Перейти к рус → греч</button>
     <button class="btn-secondary" onclick="goHome()">На главную</button>
   </div>
 </div>
@@ -587,20 +605,17 @@ function renderDecks() {
     const el = document.createElement('div');
     el.className = 'deck-card';
     el.innerHTML = `
-      <div>
-        <div class="deck-name">${d.name}</div>
-        <div class="deck-meta">${d.desc}</div>
+      <div class="deck-card-top">
+        <div>
+          <div class="deck-name">${d.name}</div>
+          <div class="deck-meta">${d.desc}</div>
+        </div>
       </div>
-      <div class="deck-arrow">›</div>`;
-    el.onclick = () => startSession(d, 1);
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-primary" onclick="startSession(DECKS.find(x=>x.id==='${d.id}'),1)">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromHome(DECKS.find(x=>x.id==='${d.id}'))">рус → греч</button>
+      </div>`;
     list.appendChild(el);
-
-    const choice = document.createElement('div');
-    choice.className = 'round-choice';
-    choice.innerHTML = `
-      <button class="round-choice-btn" onclick="startSession(DECKS.find(x=>x.id==='${d.id}'),1)">греч → рус</button>
-      <button class="round-choice-btn" onclick="startSession(DECKS.find(x=>x.id==='${d.id}'),2)">рус → греч</button>`;
-    list.appendChild(choice);
   });
 
   const wrap = document.getElementById('mastered-btn-wrap');
@@ -628,6 +643,7 @@ async function startSession(deck_data, startRound) {
     totalUnique = activeSlots.length; // фиксируем кол-во уникальных слов
 
     document.getElementById('roundBadge').textContent = round === 1 ? 'греч → рус' : 'рус → греч';
+    updateStarBtn();
     showScreen('screen-cards');
     showCard();
   } catch(e) {
@@ -635,15 +651,63 @@ async function startSession(deck_data, startRound) {
   }
 }
 
-function startRound2() {
+function startRound2FromSession() {
+  // Переход из раунда 1 — используем starWords текущей сессии
   round = 2;
   activeSlots = shuffle([...starWords]);
-  again = [];
+  again = []; mastered = [];
   idx = 0; flipped = false; doneInRound = 0;
   totalUnique = activeSlots.length;
   document.getElementById('roundBadge').textContent = 'рус → греч';
+  updateStarBtn();
   showScreen('screen-cards');
   showCard();
+}
+
+async function startRound2FromHome(deck_data) {
+  currentDeck = deck_data;
+  // Загружаем накопленные слова для раунда 2 из CloudStorage
+  const saved = await loadStarWords(deck_data.id);
+  if (!saved || saved.length === 0) {
+    showScreen('screen-no-star');
+    return;
+  }
+  round = 2;
+  activeSlots = shuffle([...saved]);
+  again = []; mastered = [];
+  idx = 0; flipped = false; doneInRound = 0;
+  totalUnique = activeSlots.length;
+  document.getElementById('roundBadge').textContent = 'рус → греч';
+  updateStarBtn();
+  showScreen('screen-cards');
+  showCard();
+}
+
+function updateStarBtn() {
+  const btn = document.getElementById('star-btn-label');
+  if (btn) {
+    btn.textContent = round === 1
+      ? '★ Отложить в рус → греч'
+      : '★ Выучено';
+  }
+}
+
+async function saveStarWords(deckId, words) {
+  if (!tg?.CloudStorage) return;
+  const existing = await loadStarWords(deckId);
+  const map = {};
+  [...(existing||[]), ...words].forEach(w => map[w.w] = w);
+  tg.CloudStorage.setItem('star_' + deckId, JSON.stringify(Object.values(map)));
+}
+
+async function loadStarWords(deckId) {
+  return new Promise(resolve => {
+    if (!tg?.CloudStorage) { resolve([]); return; }
+    tg.CloudStorage.getItem('star_' + deckId, (err, val) => {
+      if (err || !val) { resolve([]); return; }
+      try { resolve(JSON.parse(val)); } catch { resolve([]); }
+    });
+  });
 }
 
 function showCard() {
@@ -704,8 +768,13 @@ function answer(type) {
     doneInRound++;
   } else if (type === 'star') {
     doneInRound++;
-    if (round === 1) starWords.push(c);
-    else mastered.push(c);
+    if (round === 1) {
+      starWords.push(c);
+      saveStarWords(currentDeck.id, [c]);
+    } else {
+      mastered.push(c);
+      saveMastered(currentDeck.id, [c]);
+    }
   }
   if (tg) tg.HapticFeedback.impactOccurred('medium');
   idx++;
