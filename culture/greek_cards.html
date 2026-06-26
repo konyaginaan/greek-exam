@@ -724,7 +724,6 @@ function handleCardClick() {
     hasFlippedOnce = true;
     document.getElementById('tapHint')?.classList.add('hidden');
   }
-  if (tg) tg.HapticFeedback.impactOccurred('light');
 }
 
 function answer(type) {
@@ -733,10 +732,9 @@ function answer(type) {
 
   if (type === 'again') {
     again.push(c);
-    // Shake animation
     cardInner.classList.add('shake');
     setTimeout(() => cardInner.classList.remove('shake'), 400);
-    if (tg) tg.HapticFeedback.notificationOccurred('warning');
+    if (tg) tg.HapticFeedback.impactOccurred('medium');
     idx++;
     setTimeout(() => showCard(), 420);
     return;
@@ -744,6 +742,8 @@ function answer(type) {
 
   // Slide out for ok/star
   cardInner.classList.add('slide-out');
+  if (tg) tg.HapticFeedback.impactOccurred('medium');
+
   setTimeout(() => {
     cardInner.classList.remove('slide-out');
     if (type === 'ok') {
@@ -761,8 +761,6 @@ function answer(type) {
     idx++;
     showCard();
   }, 280);
-
-  if (tg) tg.HapticFeedback.impactOccurred('medium');
 }
 
 function updateProgress() {
