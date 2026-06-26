@@ -12,6 +12,7 @@
     --lime: #c5f135;
     --lime-dark: #9dc420;
     --lime-bg: #f2fad4;
+    --card-back: #e2e1db;
     --bg: #f0efe9;
     --surface: #ffffff;
     --text: #111111;
@@ -61,7 +62,7 @@
     border: 1.5px solid var(--border);
     border-radius: 18px;
     padding: 1.2rem 1.4rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -72,6 +73,27 @@
   .deck-card:active { transform: scale(0.98); border-color: var(--lime-dark); }
   .deck-name { font-size: 16px; font-weight: 700; color: var(--text); }
   .deck-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  .round-choice {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1rem;
+    padding: 0 0.1rem;
+  }
+  .round-choice-btn {
+    flex: 1;
+    padding: 9px 6px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text2);
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.1s, border-color 0.1s;
+  }
+  .round-choice-btn:active { transform: scale(0.97); border-color: var(--lime-dark); }
 
   .deck-arrow {
     width: 32px; height: 32px;
@@ -173,10 +195,10 @@
   }
 
   .card-face.back {
-    background: var(--lime-bg);
-    border: 1.5px solid var(--lime);
+    background: var(--card-back);
+    border: 1.5px solid var(--border2);
     transform: rotateY(180deg);
-    box-shadow: 0 4px 16px rgba(157, 196, 32, 0.15);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -193,10 +215,10 @@
   .original-back { font-size: 12px; color: var(--text2); }
   .flip-back-btn {
     width: 40px; height: 40px; border-radius: 50%;
-    background: rgba(157,196,32,0.15);
-    border: 1.5px solid var(--lime);
+    background: var(--border);
+    border: 1.5px solid var(--border2);
     display: flex; align-items: center; justify-content: center;
-    font-size: 16px; flex-shrink: 0; color: var(--lime-dark);
+    font-size: 16px; flex-shrink: 0; color: var(--muted);
   }
 
   /* ── BUTTONS ── */
@@ -415,24 +437,6 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
 // ── ЗВУК ПЕЧАТНОЙ МАШИНКИ ──
-function playClick() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.06, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.008));
-    }
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.18, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
-    src.connect(gain);
-    gain.connect(ctx.destination);
-    src.start();
-  } catch(e) {}
-}
 
 const ROUND_SIZE = 30;
 
@@ -493,6 +497,7 @@ let mastered = [];
 let idx = 0;
 let flipped = false;
 let doneInRound = 0;
+let totalUnique = 0;
 
 async function saveState(deckId) {
   if (!tg?.CloudStorage) return;
@@ -587,11 +592,17 @@ function renderDecks() {
         <div class="deck-meta">${d.desc}</div>
       </div>
       <div class="deck-arrow">›</div>`;
-    el.onclick = () => startSession(d);
+    el.onclick = () => startSession(d, 1);
     list.appendChild(el);
+
+    const choice = document.createElement('div');
+    choice.className = 'round-choice';
+    choice.innerHTML = `
+      <button class="round-choice-btn" onclick="startSession(DECKS.find(x=>x.id==='${d.id}'),1)">греч → рус</button>
+      <button class="round-choice-btn" onclick="startSession(DECKS.find(x=>x.id==='${d.id}'),2)">рус → греч</button>`;
+    list.appendChild(choice);
   });
 
-  // Кнопка "Выучено" для каждой колоды
   const wrap = document.getElementById('mastered-btn-wrap');
   wrap.innerHTML = '';
   DECKS.forEach(d => {
@@ -603,22 +614,19 @@ function renderDecks() {
   });
 }
 
-async function startSession(deck_data) {
+async function startSession(deck_data, startRound) {
   try {
     currentDeck = deck_data;
-    let saved = null;
-    try { saved = await loadState(deck_data.id); } catch(e) {}
-    if (saved?.activeSlots?.length > 0) {
-      ({ activeSlots, waitingPool, again, starWords, mastered, idx, doneInRound, round } = saved);
-      flipped = false;
-    } else {
-      round = 1;
-      const shuffled = shuffle([...deck_data.words]);
-      activeSlots = shuffled.slice(0, ROUND_SIZE);
-      waitingPool = shuffled.slice(ROUND_SIZE);
-      again = []; starWords = []; mastered = [];
-      idx = 0; flipped = false; doneInRound = 0;
-    }
+    round = startRound || 1;
+    // Буфер пополняется только при новом заходе — не восстанавливаем сохранённое состояние
+    const shuffled = shuffle([...deck_data.words]);
+    const size = Math.min(ROUND_SIZE, shuffled.length);
+    activeSlots = shuffled.slice(0, size);
+    waitingPool = shuffled.slice(size); // остаток — на следующий заход
+    again = []; starWords = []; mastered = [];
+    idx = 0; flipped = false; doneInRound = 0;
+    totalUnique = activeSlots.length; // фиксируем кол-во уникальных слов
+
     document.getElementById('roundBadge').textContent = round === 1 ? 'греч → рус' : 'рус → греч';
     showScreen('screen-cards');
     showCard();
@@ -630,19 +638,24 @@ async function startSession(deck_data) {
 function startRound2() {
   round = 2;
   activeSlots = shuffle([...starWords]);
-  waitingPool = []; again = [];
+  again = [];
   idx = 0; flipped = false; doneInRound = 0;
+  totalUnique = activeSlots.length;
   document.getElementById('roundBadge').textContent = 'рус → греч';
   showScreen('screen-cards');
   showCard();
 }
 
 function showCard() {
-  if (again.length > 0 && idx >= activeSlots.length) {
-    activeSlots = [...activeSlots, ...again];
-    again = [];
+  // Повторные слова добавляем в конец, но не меняем totalUnique
+  if (idx >= activeSlots.length) {
+    if (again.length > 0) {
+      activeSlots = [...activeSlots, ...again];
+      again = [];
+    } else {
+      endRound(); return;
+    }
   }
-  if (idx >= activeSlots.length) { endRound(); return; }
 
   const c = activeSlots[idx];
   const cardInner = document.getElementById('cardInner');
@@ -681,7 +694,6 @@ function handleCardClick() {
     cardInner.classList.remove('flipped');
   }
   if (tg) tg.HapticFeedback.impactOccurred('light');
-  playClick();
 }
 
 function answer(type) {
@@ -690,28 +702,22 @@ function answer(type) {
     again.push(c);
   } else if (type === 'ok') {
     doneInRound++;
-    if (waitingPool.length > 0) activeSlots.push(waitingPool.shift());
   } else if (type === 'star') {
     doneInRound++;
-    if (round === 1) {
-      starWords.push(c);
-      if (waitingPool.length > 0) activeSlots.push(waitingPool.shift());
-    } else {
-      mastered.push(c);
-    }
+    if (round === 1) starWords.push(c);
+    else mastered.push(c);
   }
-  playClick();
   if (tg) tg.HapticFeedback.impactOccurred('medium');
   idx++;
-  saveState(currentDeck.id);
   showCard();
 }
 
 function updateProgress() {
-  const total = currentDeck.words.length;
-  const pct = Math.round((doneInRound / total) * 100);
+  const pct = Math.round((doneInRound / totalUnique) * 100);
   document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('counter').textContent = idx + ' / ' + activeSlots.length;
+  // Показываем позицию среди уникальных слов (не считая повторы)
+  const uniqueDone = Math.min(idx - again.length, totalUnique);
+  document.getElementById('counter').textContent = Math.max(0, uniqueDone) + ' / ' + totalUnique;
 }
 
 function updateQueueInfo() {
