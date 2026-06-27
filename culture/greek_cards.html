@@ -698,23 +698,14 @@ function startRound2FromSession() {
 
 // ── CARD ──
 function showCard() {
-  // Если дошли до конца основного списка
-  if (idx >= activeSlots.length) {
-    if (again.length > 0) {
-      // Добавляем повторы в конец и продолжаем
-      activeSlots = [...activeSlots, ...again];
-      again = [];
-    } else {
-      // Всё пройдено
-      endRound();
-      return;
-    }
+  // Если повторные слова — добавляем их в конец
+  if (idx >= activeSlots.length && again.length > 0) {
+    activeSlots = [...activeSlots, ...again];
+    again = [];
   }
 
-  // Доп. защита от выхода за пределы
   if (idx >= activeSlots.length) {
-    endRound();
-    return;
+    endRound(); return;
   }
 
   const c = activeSlots[idx];
@@ -777,7 +768,16 @@ function answer(type) {
 
   if (tg) tg.HapticFeedback.impactOccurred('medium');
   idx++;
-  showCard();
+
+  // Проверяем конец раунда прямо здесь
+  const remainingInSlots = idx < activeSlots.length;
+  const hasAgain = again.length > 0;
+
+  if (!remainingInSlots && !hasAgain) {
+    endRound();
+  } else {
+    showCard();
+  }
 }
 
 function updateProgress() {
