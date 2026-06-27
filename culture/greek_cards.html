@@ -439,10 +439,10 @@
 <!-- ══ ROUND 1 END ══ -->
 <div class="screen" id="screen-round1-end">
   <div class="centered-screen">
-    <div class="big-emoji">🎯</div>
-    <div class="big-title">Раунд 1 завершён!</div>
+    <div class="big-emoji">✅</div>
+    <div class="big-title">Колода окончена</div>
     <div class="big-sub" id="round1-sub"></div>
-    <button class="btn-primary" id="btn-start-round2" onclick="startRound2FromSession()">Перейти к рус → греч</button>
+    <button class="btn-primary" id="btn-start-round2" onclick="startRound2FromSession()">Перейти к колоде рус → греч</button>
     <button class="btn-secondary" onclick="goHome()">На главную</button>
   </div>
 </div>
@@ -450,8 +450,8 @@
 <!-- ══ SESSION DONE ══ -->
 <div class="screen" id="screen-done">
   <div class="centered-screen">
-    <div class="big-emoji">🏆</div>
-    <div class="big-title">Сессия завершена!</div>
+    <div class="big-emoji">✅</div>
+    <div class="big-title">Колода окончена</div>
     <div class="big-sub" id="done-sub"></div>
     <button class="btn-primary" onclick="goHome()">На главную</button>
   </div>
@@ -782,13 +782,12 @@ function endRound() {
   if (round === 1) {
     const sub = starWords.length > 0
       ? `Отложено в рус → греч: ${starWords.length} сл.`
-      : 'Нет слов для второго раунда.';
+      : '';
     document.getElementById('round1-sub').textContent = sub;
     document.getElementById('btn-start-round2').style.display = starWords.length > 0 ? 'block' : 'none';
     showScreen('screen-round1-end');
   } else {
-    document.getElementById('done-sub').textContent =
-      `Выучено за сессию: ${mastered.length} сл.`;
+    document.getElementById('done-sub').textContent = '';
     showScreen('screen-done');
   }
 }
