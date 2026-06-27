@@ -698,13 +698,23 @@ function startRound2FromSession() {
 
 // ── CARD ──
 function showCard() {
+  // Если дошли до конца основного списка
   if (idx >= activeSlots.length) {
     if (again.length > 0) {
+      // Добавляем повторы в конец и продолжаем
       activeSlots = [...activeSlots, ...again];
       again = [];
     } else {
-      endRound(); return;
+      // Всё пройдено
+      endRound();
+      return;
     }
+  }
+
+  // Доп. защита от выхода за пределы
+  if (idx >= activeSlots.length) {
+    endRound();
+    return;
   }
 
   const c = activeSlots[idx];
@@ -779,16 +789,20 @@ function updateProgress() {
 
 // ── END ROUND ──
 function endRound() {
-  if (round === 1) {
-    const sub = starWords.length > 0
-      ? `Отложено в рус → греч: ${starWords.length} сл.`
-      : '';
-    document.getElementById('round1-sub').textContent = sub;
-    document.getElementById('btn-start-round2').style.display = starWords.length > 0 ? 'block' : 'none';
-    showScreen('screen-round1-end');
-  } else {
-    document.getElementById('done-sub').textContent = '';
-    showScreen('screen-done');
+  try {
+    if (round === 1) {
+      const sub = starWords.length > 0
+        ? `Отложено в рус → греч: ${starWords.length} сл.`
+        : '';
+      document.getElementById('round1-sub').textContent = sub;
+      document.getElementById('btn-start-round2').style.display = starWords.length > 0 ? 'block' : 'none';
+      showScreen('screen-round1-end');
+    } else {
+      document.getElementById('done-sub').textContent = '';
+      showScreen('screen-done');
+    }
+  } catch(e) {
+    alert('Ошибка: ' + e.message);
   }
 }
 
