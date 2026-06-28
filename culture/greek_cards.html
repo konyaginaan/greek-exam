@@ -376,7 +376,14 @@
       </div>
     </div>
 
-    <div class="topic-coming-soon">Темы появятся скоро</div>
+    <div class="deck-card">
+      <div class="deck-name">Описание внешности</div>
+      <div class="deck-meta">Лицо, волосы, черты · 30 слов</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('appearance'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('appearance'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -656,6 +663,49 @@ const DECKS = [
   }
 ];
 
+// ── ДАННЫЕ: ТЕМАТИЧЕСКИЕ КОЛОДЫ ──
+const TOPIC_DECKS = [
+  {
+    id: 'appearance',
+    name: 'Описание внешности',
+    words: [
+      {w:"μέτωπο", t:"лоб"},
+      {w:"φρύδι", t:"бровь"},
+      {w:"μάτια", t:"глаза"},
+      {w:"μύτη", t:"нос"},
+      {w:"πηγούνι", t:"подбородок"},
+      {w:"χείλη", t:"губы"},
+      {w:"πρόσωπο", t:"лицо"},
+      {w:"βάση της μύτης", t:"основание носа"},
+      {w:"άκρη του πηγουνιού", t:"кончик подбородка"},
+      {w:"στρογγυλό πρόσωπο", t:"круглое лицо"},
+      {w:"οβάλ πρόσωπο", t:"овальное лицо"},
+      {w:"μακρύ πρόσωπο", t:"длинное лицо"},
+      {w:"μαλλιά", t:"волосы"},
+      {w:"ξανθός", t:"светловолосый, блондин"},
+      {w:"καστανός", t:"каштановый, шатен"},
+      {w:"μαύρος", t:"черноволосый"},
+      {w:"ανοιχτόχρωμος", t:"светлый"},
+      {w:"σκουρόχρωμος", t:"тёмный"},
+      {w:"γαλάζιος", t:"голубой"},
+      {w:"πράσινος", t:"зелёный"},
+      {w:"καφέ", t:"карий, коричневый"},
+      {w:"πυκνός", t:"густой"},
+      {w:"αραιός", t:"редкий"},
+      {w:"παχύς", t:"толстый, полный"},
+      {w:"λεπτός", t:"тонкий"},
+      {w:"παχύ χείλος", t:"полные губы"},
+      {w:"λεπτό χείλος", t:"тонкие губы"},
+      {w:"γυαλιά", t:"очки"},
+      {w:"μέγεθος", t:"размер"},
+    ]
+  }
+];
+
+function getTopicDeck(id) {
+  return TOPIC_DECKS.find(d => d.id === id);
+}
+
 // ── ДАННЫЕ: ФАКТЫ ──
 const FACT_DECKS = [
   {
@@ -755,9 +805,9 @@ async function startSession(deck_data, startRound, fromSection) {
   showCard();
 }
 
-async function startRound2FromSection(deck_data) {
+async function startRound2FromSection(deck_data, fromSection) {
   currentDeck = deck_data;
-  backTarget = 'screen-section-exam';
+  backTarget = fromSection || 'screen-section-exam';
   showScreen('screen-loading');
   const saved = await loadStarWords(deck_data.id);
   if (!saved?.length) { showScreen('screen-no-star'); return; }
@@ -790,7 +840,7 @@ async function startRound2FromSession() {
 }
 
 async function startAllWordsSession(startRound) {
-  const allWords = DECKS.reduce((acc, d) => acc.concat(d.words), []);
+  const allWords = [...DECKS, ...TOPIC_DECKS].reduce((acc, d) => acc.concat(d.words), []);
   currentDeck = { id: 'all_words', name: 'Все слова', words: allWords };
   backTarget = 'screen-section-topics';
   await startSession(currentDeck, startRound, 'screen-section-topics');
@@ -956,7 +1006,8 @@ function shuffle(arr) {
 
 // Обновляем счётчик "Все слова"
 document.getElementById('all-words-count').textContent =
-  DECKS.reduce((s, d) => s + d.words.length, 0);
+  [...DECKS, ...TOPIC_DECKS].reduce((s, d) => s + d.words.length, 0);
 </script>
 </body>
 </html>
+
