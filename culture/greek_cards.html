@@ -45,7 +45,8 @@
     flex-direction: column;
     flex: 1;
     padding-top: 28px;
-    padding-bottom: 24px;
+    padding-bottom: 32px;
+    gap: 0;
   }
 
   .home-title {
@@ -64,7 +65,20 @@
   .home-sub {
     font-size: 14px;
     color: var(--muted);
+    margin-bottom: 28px;
+  }
+
+  /* ── SECTION ── */
+  .home-section {
     margin-bottom: 24px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
   }
 
   /* ── DECK CARD ── */
@@ -72,10 +86,10 @@
     background: var(--surface);
     border-radius: 16px;
     padding: 1.2rem 1.25rem;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.07);
   }
-  .deck-name { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .deck-name { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
   .deck-meta { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
 
   .deck-btns { display: flex; gap: 8px; }
@@ -98,61 +112,38 @@
     color: var(--lime-dark);
     background: transparent;
   }
+  .deck-btn-single {
+    border-color: var(--lime-dark);
+    color: var(--lime-dark);
+    background: transparent;
+  }
 
-  /* ── MASTERED CARD ── */
-  .mastered-card {
+  /* ── TOPIC ROW (пустые темы) ── */
+  .topic-empty {
     background: var(--surface);
-    border-radius: 16px;
-    padding: 1.1rem 1.25rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    cursor: pointer;
-    transition: transform 0.1s;
+    margin-bottom: 8px;
   }
-  .mastered-card:active { transform: scale(0.98); }
-  .mastered-card-name { font-size: 15px; font-weight: 700; color: var(--text); }
-  .mastered-pill {
-    background: var(--disabled-bg);
+  .topic-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .topic-pill {
+    font-size: 11px; font-weight: 700;
     color: var(--muted);
-    font-size: 12px;
-    font-weight: 700;
-    padding: 4px 10px;
+    background: var(--disabled-bg);
     border-radius: 20px;
+    padding: 3px 10px;
     white-space: nowrap;
   }
-
-  /* ── CTA ── */
-  .home-cta-wrap {
-    margin-top: auto;
-    padding-top: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .btn-cta {
-    width: 100%;
-    height: 56px;
-    border: none;
-    border-radius: 14px;
-    background: var(--lime);
-    color: var(--text);
-    font-size: 16px;
-    font-weight: 800;
-    cursor: pointer;
-    transition: opacity 0.1s;
-  }
-  .btn-cta:active { opacity: 0.85; }
-  .btn-text-link {
-    background: none;
-    border: none;
+  .topic-coming-soon {
+    font-size: 12px;
     color: var(--muted);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
     text-align: center;
-    padding: 4px;
+    padding: 14px 0 4px;
+    font-style: italic;
   }
 
   /* ── CARDS SCREEN ── */
@@ -215,13 +206,6 @@
   }
   .card-inner.flipped { transform: rotateY(180deg); }
 
-  @keyframes shake {
-    0%,100% { transform: rotateY(0deg); }
-  }
-  @keyframes slideOut {
-    to { transform: rotateY(0deg); }
-  }
-
   .card-face {
     position: absolute; inset: 0;
     backface-visibility: hidden;
@@ -283,6 +267,36 @@
   }
   .original-back {
     font-size: 14px; color: var(--muted);
+    text-align: center;
+  }
+
+  /* ── FACT CARD (без переворота — просто факт) ── */
+  .fact-card-front {
+    background: var(--surface);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.75rem;
+    gap: 12px;
+    overflow: hidden;
+    border-radius: 20px;
+    text-align: center;
+  }
+  .fact-card-front .word {
+    font-size: 22px;
+  }
+  .fact-card-back {
+    background: #F5F5F5;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.75rem;
+    gap: 8px;
+    border-radius: 20px;
     text-align: center;
   }
 
@@ -371,19 +385,46 @@
 <div class="screen active" id="screen-home">
   <div class="home-wrap">
     <div class="home-title">Greek <em>Words</em></div>
-    <div class="home-sub">Выбери колоду для повторения</div>
+    <div class="home-sub">Изучай греческий</div>
 
-    <div id="deck-list"></div>
-
-    <div id="mastered-card-wrap"></div>
-
-    <div class="home-cta-wrap">
-      <button class="btn-text-link" onclick="showAllMastered(currentDeck)">Посмотреть выученные слова</button>
+    <!-- СЕКЦИЯ 1: Экзамен -->
+    <div class="home-section">
+      <div class="section-label">📋 Экзамен по истории и культуре Кипра</div>
+      <div class="deck-card">
+        <div class="deck-name">Учить слова</div>
+        <div class="deck-meta">История и культура Кипра · 133 слова</div>
+        <div class="deck-btns">
+          <button class="deck-btn deck-btn-lime" onclick="startSession(DECKS[0], 1)">греч → рус</button>
+          <button class="deck-btn" onclick="startRound2FromHome(DECKS[0])">рус → греч</button>
+        </div>
+      </div>
+      <div class="deck-card">
+        <div class="deck-name">Должностные лица, даты и пр.</div>
+        <div class="deck-meta">Факты для запоминания · скоро</div>
+        <div class="deck-btns">
+          <button class="deck-btn deck-btn-single" onclick="startFactSession(FACT_DECKS[0])">Учить факты</button>
+        </div>
+      </div>
     </div>
+
+    <!-- СЕКЦИЯ 2: Слова по темам -->
+    <div class="home-section">
+      <div class="section-label">📚 Слова по темам</div>
+      <div class="deck-card">
+        <div class="deck-name">Все слова</div>
+        <div class="deck-meta">Объединяет все колоды · <span id="all-words-count">133</span> слова</div>
+        <div class="deck-btns">
+          <button class="deck-btn deck-btn-lime" onclick="startAllWordsSession(1)">греч → рус</button>
+          <button class="deck-btn" onclick="startAllWordsSession(2)">рус → греч</button>
+        </div>
+      </div>
+      <div class="topic-coming-soon">Темы появятся скоро</div>
+    </div>
+
   </div>
 </div>
 
-<!-- ══ CARDS ══ -->
+<!-- ══ CARDS (слова, два раунда) ══ -->
 <div class="screen" id="screen-cards">
   <div class="top-bar">
     <div class="back-btn" onclick="goHome()">← Назад</div>
@@ -416,6 +457,42 @@
       </button>
     </div>
     <button class="btn-star" id="btn-star" onclick="answer('star')">★ Отложить в рус → греч</button>
+  </div>
+</div>
+
+<!-- ══ FACT CARDS (факты, простой переворот) ══ -->
+<div class="screen" id="screen-facts">
+  <div class="top-bar">
+    <div class="back-btn" onclick="goHome()">← Назад</div>
+    <div class="round-badge" style="background:#ddd;color:#555;">Факты</div>
+    <div class="counter" id="fact-counter"></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-fill" id="factProgressFill"></div></div>
+
+  <div class="card-wrap" onclick="handleFactCardClick()" style="cursor:pointer;">
+    <div class="card-inner" id="factCardInner">
+      <div class="card-face front fact-card-front">
+        <div class="flip-corner">↩︎</div>
+        <div class="word" id="factQuestionEl" style="font-size:20px; text-align:center;"></div>
+        <div class="tap-hint" id="factTapHint">нажми для ответа</div>
+      </div>
+      <div class="card-face back fact-card-back">
+        <div class="translation" id="factAnswerEl" style="font-size:22px;"></div>
+        <div class="original-back" id="factSubEl"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards-bottom">
+    <div class="btns">
+      <button class="btn btn-again" onclick="factAnswer('again')">
+        <span class="btn-icon">↺</span>Ещё раз
+      </button>
+      <button class="btn btn-ok" onclick="factAnswer('ok')">
+        <span class="btn-icon">✓</span>Помню
+      </button>
+    </div>
+    <button class="btn-star" style="visibility:hidden;">placeholder</button>
   </div>
 </div>
 
@@ -462,6 +539,16 @@
   </div>
 </div>
 
+<!-- ══ FACT SESSION DONE ══ -->
+<div class="screen" id="screen-fact-done">
+  <div class="centered-screen">
+    <div class="big-emoji">🧠</div>
+    <div class="big-title">Готово!</div>
+    <div class="big-sub" id="fact-done-sub"></div>
+    <button class="btn-primary" onclick="goHome()">На главную</button>
+  </div>
+</div>
+
 <!-- ══ ALL MASTERED ══ -->
 <div class="screen" id="screen-all-mastered">
   <div class="top-bar">
@@ -478,6 +565,7 @@ if (tg) { tg.ready(); tg.expand(); }
 
 const ROUND_SIZE = 30;
 
+// ── ДАННЫЕ: СЛОВА ──
 const DECKS = [
   {
     id: 'culture',
@@ -621,7 +709,19 @@ const DECKS = [
   }
 ];
 
-// ── STATE ──
+// ── ДАННЫЕ: ФАКТЫ (пустые, будем наполнять) ──
+const FACT_DECKS = [
+  {
+    id: 'facts_culture',
+    name: 'Должностные лица, даты и пр.',
+    facts: [
+      // Пример структуры: {q: "вопрос / термин", a: "ответ / факт", sub: "пояснение (опц.)"}
+      // Будем добавлять сюда позже
+    ]
+  }
+];
+
+// ── STATE: СЛОВА ──
 let currentDeck = DECKS[0];
 let round = 1;
 let activeSlots = [];
@@ -632,6 +732,15 @@ let idx = 0;
 let flipped = false;
 let doneInRound = 0;
 let totalUnique = 0;
+
+// ── STATE: ФАКТЫ ──
+let currentFactDeck = FACT_DECKS[0];
+let factSlots = [];
+let factAgain = [];
+let factIdx = 0;
+let factFlipped = false;
+let factDoneCount = 0;
+let factTotal = 0;
 
 // ── CLOUD STORAGE ──
 function csSet(key, val) {
@@ -671,59 +780,18 @@ function showScreen(id) {
 }
 
 function goHome() {
-  updateCTA();
   showScreen('screen-home');
 }
 
 // ── HOME ──
-async function renderHome() {
-  const d = currentDeck;
-
-  // Deck card
-  const list = document.getElementById('deck-list');
-  list.innerHTML = `
-    <div class="deck-card">
-      <div class="deck-name">${d.name}</div>
-      <div class="deck-meta">${d.desc}</div>
-      <div class="deck-btns">
-        <button class="deck-btn deck-btn-lime" onclick="startSession(currentDeck,1)">греч → рус</button>
-        <button class="deck-btn" onclick="startRound2FromHome()">рус → греч</button>
-      </div>
-    </div>`;
-
-  updateCTA();
+function renderHome() {
+  // Обновляем счётчик "Все слова"
+  const total = DECKS.reduce((sum, d) => sum + d.words.length, 0);
+  const el = document.getElementById('all-words-count');
+  if (el) el.textContent = total;
 }
 
-async function updateCTA() {
-  const btn = document.getElementById('btn-cta');
-  const starCount = (await loadStarWords(currentDeck.id)).length;
-  const masteredCount = (await loadMastered(currentDeck.id)).length;
-
-  if (masteredCount >= currentDeck.words.length) {
-    btn.textContent = 'Повторить всё заново';
-  } else if (starCount > 0) {
-    btn.textContent = 'Продолжить — рус → греч';
-  } else {
-    btn.textContent = 'Начать — греч → рус';
-  }
-}
-
-async function handleCTA() {
-  const starCount = (await loadStarWords(currentDeck.id)).length;
-  const masteredCount = (await loadMastered(currentDeck.id)).length;
-
-  if (masteredCount >= currentDeck.words.length) {
-    csDel('star_' + currentDeck.id);
-    csDel('mastered_' + currentDeck.id);
-    startSession(currentDeck, 1);
-  } else if (starCount > 0) {
-    startRound2FromHome();
-  } else {
-    startSession(currentDeck, 1);
-  }
-}
-
-// ── SESSION ──
+// ── SESSION: СЛОВА ──
 async function startSession(deck_data, startRound) {
   currentDeck = deck_data;
   round = startRound || 1;
@@ -731,7 +799,6 @@ async function startSession(deck_data, startRound) {
   let wordsToUse = [...deck_data.words];
 
   if (round === 1) {
-    // Убираем слова, уже отложенные в рус→греч
     const starred = await Promise.race([
       loadStarWords(deck_data.id),
       new Promise(r => setTimeout(() => r([]), 2000))
@@ -755,10 +822,10 @@ async function startSession(deck_data, startRound) {
   showCard();
 }
 
-async function startRound2FromHome() {
-  // Показываем загрузку пока ждём CloudStorage
+async function startRound2FromHome(deck_data) {
+  currentDeck = deck_data;
   showScreen('screen-loading');
-  const saved = await loadStarWords(currentDeck.id);
+  const saved = await loadStarWords(deck_data.id);
   if (!saved || saved.length === 0) { showScreen('screen-no-star'); return; }
   round = 2;
   activeSlots = shuffle([...saved]);
@@ -772,7 +839,6 @@ async function startRound2FromHome() {
 }
 
 async function startRound2FromSession() {
-  // Объединяем слова текущей сессии с сохранёнными из прошлых
   const saved = await loadStarWords(currentDeck.id) || [];
   const map = {};
   [...saved, ...starWords].forEach(w => map[w.w] = w);
@@ -791,9 +857,24 @@ async function startRound2FromSession() {
   showCard();
 }
 
+// ── SESSION: ВСЕ СЛОВА ──
+async function startAllWordsSession(startRound) {
+  // Объединяем все слова из всех колод
+  const allWords = DECKS.reduce((acc, d) => {
+    return acc.concat(d.words.map(w => ({...w, _deckId: d.id})));
+  }, []);
+
+  currentDeck = {
+    id: 'all_words',
+    name: 'Все слова',
+    words: allWords
+  };
+
+  await startSession(currentDeck, startRound);
+}
+
 // ── CARD ──
 function showCard() {
-  // Если повторные слова — добавляем их в конец
   if (idx >= activeSlots.length && again.length > 0) {
     activeSlots = [...activeSlots, ...again];
     again = [];
@@ -864,7 +945,6 @@ function answer(type) {
   if (tg) tg.HapticFeedback.impactOccurred('medium');
   idx++;
 
-  // Проверяем конец раунда прямо здесь
   const remainingInSlots = idx < activeSlots.length;
   const hasAgain = again.length > 0;
 
@@ -899,6 +979,100 @@ function endRound() {
   } catch(e) {
     alert('Ошибка: ' + e.message);
   }
+}
+
+// ── SESSION: ФАКТЫ ──
+function startFactSession(factDeck) {
+  currentFactDeck = factDeck;
+
+  if (!factDeck.facts || factDeck.facts.length === 0) {
+    // Пока нет фактов — показываем заглушку
+    alert('Раздел в разработке — факты появятся скоро!');
+    return;
+  }
+
+  factSlots = shuffle([...factDeck.facts]);
+  factAgain = [];
+  factIdx = 0;
+  factFlipped = false;
+  factDoneCount = 0;
+  factTotal = factSlots.length;
+
+  showScreen('screen-facts');
+  showFactCard();
+}
+
+function showFactCard() {
+  if (factIdx >= factSlots.length && factAgain.length > 0) {
+    factSlots = [...factSlots, ...factAgain];
+    factAgain = [];
+  }
+
+  if (factIdx >= factSlots.length) {
+    document.getElementById('fact-done-sub').textContent =
+      `Просмотрено ${factTotal} карточек`;
+    showScreen('screen-fact-done');
+    return;
+  }
+
+  const c = factSlots[factIdx];
+  const cardInner = document.getElementById('factCardInner');
+  const wasFlipped = cardInner.classList.contains('flipped');
+
+  document.getElementById('factQuestionEl').textContent = c.q;
+  document.getElementById('factAnswerEl').textContent = c.a;
+  document.getElementById('factSubEl').textContent = c.sub || '';
+
+  cardInner.style.transition = 'none';
+  cardInner.classList.remove('flipped');
+  factFlipped = false;
+  factHasFlipped = false;
+  const hint = document.getElementById('factTapHint');
+  if (hint) hint.classList.remove('hidden');
+  requestAnimationFrame(() => { cardInner.style.transition = ''; });
+
+  updateFactProgress();
+}
+
+let factHasFlipped = false;
+
+function handleFactCardClick() {
+  const cardInner = document.getElementById('factCardInner');
+  factFlipped = !factFlipped;
+  cardInner.classList.toggle('flipped', factFlipped);
+  if (factFlipped && !factHasFlipped) {
+    factHasFlipped = true;
+    document.getElementById('factTapHint')?.classList.add('hidden');
+  }
+}
+
+function factAnswer(type) {
+  if (type === 'again') {
+    factAgain.push(factSlots[factIdx]);
+  } else {
+    factDoneCount++;
+  }
+
+  if (tg) tg.HapticFeedback.impactOccurred('medium');
+  factIdx++;
+
+  const hasMore = factIdx < factSlots.length;
+  const hasAgain = factAgain.length > 0;
+
+  if (!hasMore && !hasAgain) {
+    document.getElementById('fact-done-sub').textContent =
+      `Просмотрено ${factTotal} карточек`;
+    showScreen('screen-fact-done');
+  } else {
+    showFactCard();
+  }
+}
+
+function updateFactProgress() {
+  const pct = Math.round((factDoneCount / factTotal) * 100);
+  document.getElementById('factProgressFill').style.width = pct + '%';
+  const shown = Math.min(factIdx, factTotal);
+  document.getElementById('fact-counter').textContent = shown + ' / ' + factTotal;
 }
 
 // ── ALL MASTERED ──
