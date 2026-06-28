@@ -384,6 +384,15 @@
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('appearance'), 'screen-section-topics')">рус → греч</button>
       </div>
     </div>
+
+    <div class="deck-card">
+      <div class="deck-name">Описание характера</div>
+      <div class="deck-meta">Черты личности · 11 слов</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('character'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('character'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -698,6 +707,26 @@ const TOPIC_DECKS = [
       {w:"λεπτό χείλος", t:"тонкие губы"},
       {w:"γυαλιά", t:"очки"},
       {w:"μέγεθος", t:"размер"},
+    ]
+  }
+];
+
+  ,
+  {
+    id: 'character',
+    name: 'Описание характера',
+    words: [
+      {w:"έξυπνος", t:"умный"},
+      {w:"ευγενικός", t:"вежливый"},
+      {w:"κανονικός", t:"нормальный, обычный"},
+      {w:"ευαίσθητος", t:"чувствительный"},
+      {w:"ανώριμος", t:"незрелый"},
+      {w:"αποφασιστικός", t:"решительный"},
+      {w:"διστακτικός", t:"нерешительный"},
+      {w:"γενναιόδωρος", t:"щедрый"},
+      {w:"συνετός", t:"разумный, рассудительный"},
+      {w:"σταθερός χαρακτήρας", t:"устойчивый характер"},
+      {w:"χαρακτήρας", t:"характер"},
     ]
   }
 ];
