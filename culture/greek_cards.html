@@ -754,9 +754,17 @@ async function startRound2FromHome() {
   showCard();
 }
 
-function startRound2FromSession() {
+async function startRound2FromSession() {
+  // Объединяем слова текущей сессии с сохранёнными из прошлых
+  const saved = await loadStarWords(currentDeck.id) || [];
+  const map = {};
+  [...saved, ...starWords].forEach(w => map[w.w] = w);
+  const allStarWords = Object.values(map);
+
+  if (allStarWords.length === 0) { showScreen('screen-no-star'); return; }
+
   round = 2;
-  activeSlots = shuffle([...starWords]);
+  activeSlots = shuffle(allStarWords);
   again = []; mastered = [];
   idx = 0; flipped = false; doneInRound = 0;
   totalUnique = activeSlots.length;
