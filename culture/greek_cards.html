@@ -300,6 +300,15 @@
   .mastered-word { font-size: 15px; font-weight: 700; color: var(--text); }
   .mastered-trans { font-size: 13px; color: var(--muted); text-align: right; }
 
+  .btn-mastered-link {
+    background: none; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    text-align: center; width: 100%;
+    padding: 14px 0 2px;
+    margin-top: auto;
+  }
+  .btn-mastered-link:active { opacity: 0.6; }
+
   #screen-cards { padding-top: 0; padding-bottom: 1.5rem; }
   #screen-all-mastered { padding: 0 0 1.5rem; }
 </style>
@@ -356,6 +365,8 @@
         <button class="deck-btn deck-btn-lime" onclick="startFactSession(FACT_DECKS[0])">Учить факты</button>
       </div>
     </div>
+
+    <button class="btn-mastered-link" onclick="showAllMastered()">★ Выученные слова</button>
   </div>
 </div>
 
@@ -393,6 +404,8 @@
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('character'), 'screen-section-topics')">рус → греч</button>
       </div>
     </div>
+
+    <button class="btn-mastered-link" onclick="showAllMastered()">★ Выученные слова</button>
   </div>
 </div>
 
@@ -1022,6 +1035,49 @@ function updateFactProgress() {
   const pct = Math.round((factDoneCount / factTotal) * 100);
   document.getElementById('factProgressFill').style.width = pct + '%';
   document.getElementById('fact-counter').textContent = Math.min(factIdx, factTotal) + ' / ' + factTotal;
+}
+
+// ── ALL MASTERED ──
+async function showAllMastered() {
+  backTarget = document.querySelector('.screen.active')?.id || 'screen-main';
+  showScreen('screen-all-mastered');
+
+  const allDecks = [...DECKS, ...TOPIC_DECKS];
+  const list = document.getElementById('all-mastered-list');
+  const count = document.getElementById('all-mastered-count');
+  list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:20px 0;text-align:center;">Загрузка...</div>';
+
+  const results = await Promise.all(allDecks.map(async d => ({
+    deck: d, words: (await loadMastered(d.id)) || []
+  })));
+
+  const total = results.reduce((s, r) => s + r.words.length, 0);
+  list.innerHTML = '';
+
+  if (total === 0) {
+    count.textContent = '';
+    list.innerHTML = `<div style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;flex-direction:column;gap:0.5rem;padding:2rem;">
+      <div style="font-size:40px;">🏺</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);">Пока ничего нет</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;">Пройди раунды и отметь<br>слова ★ Выучено</div>
+    </div>`;
+    return;
+  }
+
+  count.textContent = total + ' сл.';
+  results.forEach(({ deck, words }) => {
+    if (!words.length) return;
+    const header = document.createElement('div');
+    header.style.cssText = 'font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:14px 0 6px;';
+    header.textContent = deck.name;
+    list.appendChild(header);
+    words.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'mastered-row';
+      row.innerHTML = `<span class="mastered-word">${c.w}</span><span class="mastered-trans">${c.t}</span>`;
+      list.appendChild(row);
+    });
+  });
 }
 
 // ── UTILS ──
