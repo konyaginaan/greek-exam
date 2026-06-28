@@ -30,9 +30,16 @@
     padding: 0 1rem;
     max-width: 480px;
     margin: 0 auto;
+    position: relative;
   }
 
-  .screen { display: none; flex-direction: column; flex: 1; min-height: 100vh; }
+  .screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 100vh;
+    width: 100%;
+  }
   .screen.active { display: flex; }
 
   /* ══ ГЛАВНЫЙ ЭКРАН ══ */
@@ -722,8 +729,6 @@ const TOPIC_DECKS = [
       {w:"μέγεθος", t:"размер"},
     ]
   }
-];
-
   ,
   {
     id: 'character',
