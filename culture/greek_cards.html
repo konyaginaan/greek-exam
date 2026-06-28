@@ -30,16 +30,9 @@
     padding: 0 1rem;
     max-width: 480px;
     margin: 0 auto;
-    position: relative;
   }
 
-  .screen {
-    display: none;
-    flex-direction: column;
-    flex: 1;
-    min-height: 100vh;
-    width: 100%;
-  }
+  .screen { display: none; flex-direction: column; flex: 1; min-height: 100vh; }
   .screen.active { display: flex; }
 
   /* ══ ГЛАВНЫЙ ЭКРАН ══ */
@@ -310,8 +303,7 @@
   .btn-mastered-link {
     background: none; border: none; cursor: pointer;
     font-size: 13px; font-weight: 600; color: var(--muted);
-    text-align: center; width: 100%;
-    padding: 14px 0 2px;
+    text-align: center; width: 100%; padding: 14px 0 2px;
     margin-top: auto;
   }
   .btn-mastered-link:active { opacity: 0.6; }
@@ -361,7 +353,7 @@
       <div class="deck-meta">История и культура Кипра · 133 слова</div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(DECKS[0], 1)">греч → рус</button>
-        <button class="deck-btn" onclick="startRound2FromSection(DECKS[0])">рус → греч</button>
+        <button class="deck-btn" onclick="startRound2FromSection(DECKS[0], 'screen-section-exam')">рус → греч</button>
       </div>
     </div>
 
@@ -396,7 +388,7 @@
 
     <div class="deck-card">
       <div class="deck-name">Описание внешности</div>
-      <div class="deck-meta">Лицо, волосы, черты · 30 слов</div>
+      <div class="deck-meta">Лицо, волосы, черты · 29 слов</div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('appearance'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('appearance'), 'screen-section-topics')">рус → греч</button>
@@ -692,67 +684,6 @@ const DECKS = [
   }
 ];
 
-// ── ДАННЫЕ: ТЕМАТИЧЕСКИЕ КОЛОДЫ ──
-const TOPIC_DECKS = [
-  {
-    id: 'appearance',
-    name: 'Описание внешности',
-    words: [
-      {w:"μέτωπο", t:"лоб"},
-      {w:"φρύδι", t:"бровь"},
-      {w:"μάτια", t:"глаза"},
-      {w:"μύτη", t:"нос"},
-      {w:"πηγούνι", t:"подбородок"},
-      {w:"χείλη", t:"губы"},
-      {w:"πρόσωπο", t:"лицо"},
-      {w:"βάση της μύτης", t:"основание носа"},
-      {w:"άκρη του πηγουνιού", t:"кончик подбородка"},
-      {w:"στρογγυλό πρόσωπο", t:"круглое лицо"},
-      {w:"οβάλ πρόσωπο", t:"овальное лицо"},
-      {w:"μακρύ πρόσωπο", t:"длинное лицо"},
-      {w:"μαλλιά", t:"волосы"},
-      {w:"ξανθός", t:"светловолосый, блондин"},
-      {w:"καστανός", t:"каштановый, шатен"},
-      {w:"μαύρος", t:"черноволосый"},
-      {w:"ανοιχτόχρωμος", t:"светлый"},
-      {w:"σκουρόχρωμος", t:"тёмный"},
-      {w:"γαλάζιος", t:"голубой"},
-      {w:"πράσινος", t:"зелёный"},
-      {w:"καφέ", t:"карий, коричневый"},
-      {w:"πυκνός", t:"густой"},
-      {w:"αραιός", t:"редкий"},
-      {w:"παχύς", t:"толстый, полный"},
-      {w:"λεπτός", t:"тонкий"},
-      {w:"παχύ χείλος", t:"полные губы"},
-      {w:"λεπτό χείλος", t:"тонкие губы"},
-      {w:"γυαλιά", t:"очки"},
-      {w:"μέγεθος", t:"размер"},
-    ]
-  }
-  ,
-  {
-    id: 'character',
-    name: 'Описание характера',
-    words: [
-      {w:"έξυπνος", t:"умный"},
-      {w:"ευγενικός", t:"вежливый"},
-      {w:"κανονικός", t:"нормальный, обычный"},
-      {w:"ευαίσθητος", t:"чувствительный"},
-      {w:"ανώριμος", t:"незрелый"},
-      {w:"αποφασιστικός", t:"решительный"},
-      {w:"διστακτικός", t:"нерешительный"},
-      {w:"γενναιόδωρος", t:"щедрый"},
-      {w:"συνετός", t:"разумный, рассудительный"},
-      {w:"σταθερός χαρακτήρας", t:"устойчивый характер"},
-      {w:"χαρακτήρας", t:"характер"},
-    ]
-  }
-];
-
-function getTopicDeck(id) {
-  return TOPIC_DECKS.find(d => d.id === id);
-}
-
 // ── ДАННЫЕ: ФАКТЫ ──
 const FACT_DECKS = [
   {
@@ -1042,11 +973,79 @@ function updateFactProgress() {
   document.getElementById('fact-counter').textContent = Math.min(factIdx, factTotal) + ' / ' + factTotal;
 }
 
+// ── ТЕМАТИЧЕСКИЕ КОЛОДЫ ──
+const TOPIC_DECKS = [
+  {
+    id: 'appearance',
+    name: 'Описание внешности',
+    words: [
+      {w:"μέτωπο", t:"лоб"},
+      {w:"φρύδι", t:"бровь"},
+      {w:"μάτια", t:"глаза"},
+      {w:"μύτη", t:"нос"},
+      {w:"πηγούνι", t:"подбородок"},
+      {w:"χείλη", t:"губы"},
+      {w:"πρόσωπο", t:"лицо"},
+      {w:"βάση της μύτης", t:"основание носа"},
+      {w:"άκρη του πηγουνιού", t:"кончик подбородка"},
+      {w:"στρογγυλό πρόσωπο", t:"круглое лицо"},
+      {w:"οβάλ πρόσωπο", t:"овальное лицо"},
+      {w:"μακρύ πρόσωπο", t:"длинное лицо"},
+      {w:"μαλλιά", t:"волосы"},
+      {w:"ξανθός", t:"светловолосый, блондин"},
+      {w:"καστανός", t:"каштановый, шатен"},
+      {w:"μαύρος", t:"черноволосый"},
+      {w:"ανοιχτόχρωμος", t:"светлый"},
+      {w:"σκουρόχρωμος", t:"тёмный"},
+      {w:"γαλάζιος", t:"голубой"},
+      {w:"πράσινος", t:"зелёный"},
+      {w:"καφέ", t:"карий, коричневый"},
+      {w:"πυκνός", t:"густой"},
+      {w:"αραιός", t:"редкий"},
+      {w:"παχύς", t:"толстый, полный"},
+      {w:"λεπτός", t:"тонкий"},
+      {w:"παχύ χείλος", t:"полные губы"},
+      {w:"λεπτό χείλος", t:"тонкие губы"},
+      {w:"γυαλιά", t:"очки"},
+      {w:"μέγεθος", t:"размер"},
+    ]
+  },
+  {
+    id: 'character',
+    name: 'Описание характера',
+    words: [
+      {w:"έξυπνος", t:"умный"},
+      {w:"ευγενικός", t:"вежливый"},
+      {w:"κανονικός", t:"нормальный, обычный"},
+      {w:"ευαίσθητος", t:"чувствительный"},
+      {w:"ανώριμος", t:"незрелый"},
+      {w:"αποφασιστικός", t:"решительный"},
+      {w:"διστακτικός", t:"нерешительный"},
+      {w:"γενναιόδωρος", t:"щедрый"},
+      {w:"συνετός", t:"разумный, рассудительный"},
+      {w:"σταθερός χαρακτήρας", t:"устойчивый характер"},
+      {w:"χαρακτήρας", t:"характер"},
+    ]
+  }
+];
+
+function getTopicDeck(id) {
+  return TOPIC_DECKS.find(d => d.id === id);
+}
+
+// ── UTILS ──
+function shuffle(arr) {
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 // ── ALL MASTERED ──
 async function showAllMastered() {
   backTarget = document.querySelector('.screen.active')?.id || 'screen-main';
   showScreen('screen-all-mastered');
-
   const allDecks = [...DECKS, ...TOPIC_DECKS];
   const list = document.getElementById('all-mastered-list');
   const count = document.getElementById('all-mastered-count');
@@ -1085,19 +1084,9 @@ async function showAllMastered() {
   });
 }
 
-// ── UTILS ──
-function shuffle(arr) {
-  for (let i = arr.length-1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i+1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
 // Обновляем счётчик "Все слова"
 document.getElementById('all-words-count').textContent =
   [...DECKS, ...TOPIC_DECKS].reduce((s, d) => s + d.words.length, 0);
 </script>
 </body>
 </html>
-
