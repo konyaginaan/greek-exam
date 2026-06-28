@@ -419,6 +419,13 @@
   </div>
 </div>
 
+<!-- ══ LOADING ══ -->
+<div class="screen" id="screen-loading">
+  <div style="flex:1; display:flex; align-items:center; justify-content:center;">
+    <div style="font-size:14px; color:var(--muted);">Загрузка...</div>
+  </div>
+</div>
+
 <!-- ══ NO STAR WORDS ══ -->
 <div class="screen" id="screen-no-star">
   <div class="top-bar">
@@ -732,10 +739,9 @@ async function startSession(deck_data, startRound) {
 }
 
 async function startRound2FromHome() {
-  const saved = await Promise.race([
-    loadStarWords(currentDeck.id),
-    new Promise(r => setTimeout(() => r([]), 2000))
-  ]);
+  // Показываем загрузку пока ждём CloudStorage
+  showScreen('screen-loading');
+  const saved = await loadStarWords(currentDeck.id);
   if (!saved || saved.length === 0) { showScreen('screen-no-star'); return; }
   round = 2;
   activeSlots = shuffle([...saved]);
@@ -874,10 +880,7 @@ function endRound() {
 async function showAllMastered(deck_data) {
   if (!deck_data) deck_data = currentDeck;
   showScreen('screen-all-mastered');
-  const words = await Promise.race([
-    loadMastered(deck_data.id),
-    new Promise(r => setTimeout(() => r([]), 2000))
-  ]);
+  const words = await loadMastered(deck_data.id);
   const list = document.getElementById('all-mastered-list');
   const count = document.getElementById('all-mastered-count');
   list.innerHTML = '';
