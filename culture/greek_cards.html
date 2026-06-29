@@ -444,21 +444,22 @@
 <div class="screen" id="screen-facts">
   <div class="top-bar">
     <div class="back-btn" onclick="goBack()">← Назад</div>
-    <div class="round-badge" style="background:#ddd;color:#555;">Факты</div>
+    <div class="round-badge" style="background:#ddd;color:#555;" id="factRoundBadge">Имя → Должность</div>
     <div class="counter" id="fact-counter"></div>
   </div>
   <div class="progress-wrap"><div class="progress-fill" id="factProgressFill"></div></div>
 
   <div class="card-wrap" onclick="handleFactCardClick()">
     <div class="card-inner" id="factCardInner">
-      <div class="card-face front">
+      <div class="card-face front" style="gap:6px;">
         <div class="flip-corner">↩︎</div>
-        <div class="word" id="factQuestionEl" style="font-size:20px;"></div>
+        <div class="word" id="factFrontEl" style="font-size:22px; text-align:center;"></div>
         <div class="tap-hint" id="factTapHint">нажми для ответа</div>
       </div>
-      <div class="card-face back">
-        <div class="translation" id="factAnswerEl" style="font-size:22px;"></div>
-        <div class="original-back" id="factSubEl"></div>
+      <div class="card-face back" style="gap:10px;">
+        <div id="factBackNameEl" style="font-size:14px; color:var(--muted); text-align:center;"></div>
+        <div id="factBackRoleEl" style="font-size:18px; font-weight:700; color:var(--text); text-align:center; line-height:1.4;"></div>
+        <div id="factBackRoleRuEl" style="font-size:13px; color:var(--muted); text-align:center; line-height:1.4;"></div>
       </div>
     </div>
   </div>
@@ -468,7 +469,7 @@
       <button class="btn btn-again" onclick="factAnswer('again')"><span class="btn-icon">↺</span>Ещё раз</button>
       <button class="btn btn-ok"    onclick="factAnswer('ok')"><span class="btn-icon">✓</span>Помню</button>
     </div>
-    <button class="btn-star" style="visibility:hidden;">placeholder</button>
+    <button class="btn-star" onclick="factAnswer('mastered')">★ Выучено</button>
   </div>
 </div>
 
@@ -689,7 +690,28 @@ const FACT_DECKS = [
   {
     id: 'facts_culture',
     name: 'Должностные лица, даты и пр.',
-    facts: []  // будем наполнять позже
+    facts: [
+      {name:"Νίκος Χριστοδουλίδης", role:"Πρόεδρος της Κυπριακής Δημοκρατίας", role_ru:"Президент Республики Кипр"},
+      {name:"Κωνσταντίνος Κόμπος", role:"Υπουργός Εξωτερικών", role_ru:"Министр иностранных дел"},
+      {name:"Κωνσταντίνος Ιωάννου", role:"Υπουργός Εσωτερικών", role_ru:"Министр внутренних дел"},
+      {name:"Μάκης Κεραυνός", role:"Υπουργός Οικονομικών", role_ru:"Министр финансов"},
+      {name:"Βασίλης Πάλμας", role:"Υπουργός Άμυνας", role_ru:"Министр обороны"},
+      {name:"Αθηνά Μιχαηλίδου", role:"Υπουργός Παιδείας και Πολιτισμού", role_ru:"Министр образования и культуры"},
+      {name:"Μαρίνος Μουσιούττας", role:"Υπουργός Εργασίας και Κοινωνικών Ασφαλίσεων", role_ru:"Министр труда и социального страхования"},
+      {name:"Νεόφυτος Χαραλαμπίδης", role:"Υπουργός Υγείας", role_ru:"Министр здравоохранения"},
+      {name:"Κωνσταντίνος Φίτιρης", role:"Υπουργός Δικαιοσύνης και Δημοσίας Τάξεως", role_ru:"Министр юстиции и общественного порядка"},
+      {name:"Γιώργος Παπαναστασίου", role:"Υπουργός Ενέργειας, Εμπορίου, Βιομηχανίας και Τουρισμού", role_ru:"Министр энергетики, торговли, промышленности и туризма"},
+      {name:"Μαρία Παναγιώτου", role:"Υπουργός Γεωργίας, Φυσικών Πόρων και Περιβάλλοντος", role_ru:"Министр сельского хозяйства, природных ресурсов и окружающей среды"},
+      {name:"Αλέξης Βαφιάδης", role:"Υπουργός Μεταφορών, Επικοινωνιών και Έργων", role_ru:"Министр транспорта, связи и общественных работ"},
+      {name:"Ειρήνη Πίκη", role:"Υφυπουργός Παρά τω Προέδρω", role_ru:"Замминистра при Президенте"},
+      {name:"Μαριλένα Ραουνά", role:"Υφυπουργός για Ευρωπαϊκά Θέματα", role_ru:"Замминистра по европейским делам"},
+      {name:"Μαρίνα Χατζημανώλη", role:"Υφυπουργός Ναυτιλίας", role_ru:"Замминистра по судоходству"},
+      {name:"Μιχάλης Χατζηγιάννης", role:"Υφυπουργός Πολιτισμού", role_ru:"Замминистра культуры"},
+      {name:"Κώστας Κούμης", role:"Υφυπουργός Τουρισμού", role_ru:"Замминистра туризма"},
+      {name:"Νικόδημος Δαμιανού", role:"Υφυπουργός Έρευνας, Καινοτομίας και Ψηφιακής Πολιτικής", role_ru:"Замминистра по инновациям и цифровой политике"},
+      {name:"Νικόλαος Ιωαννίδης", role:"Υφυπουργός Μετανάστευσης και Διεθνούς Προστασίας", role_ru:"Замминистра по миграции и международной защите"},
+      {name:"Κωνσταντίνος Λετυμπιώτης", role:"Κυβερνητικός Εκπρόσωπος", role_ru:"Пресс-секретарь правительства"},
+    ]
   }
 ];
 
@@ -723,6 +745,7 @@ let currentFactDeck = FACT_DECKS[0];
 let factSlots = [], factAgain = [];
 let factIdx = 0, factFlipped = false, factHasFlipped = false;
 let factDoneCount = 0, factTotal = 0;
+let factMastered = [];
 
 // ── CLOUD STORAGE ──
 function csSet(key, val) { if (tg?.CloudStorage) tg.CloudStorage.setItem(key, JSON.stringify(val)); }
@@ -911,8 +934,13 @@ function startFactSession(factDeck) {
     return;
   }
 
-  factSlots = shuffle([...factDeck.facts]);
+  // Каждая карточка получает случайную сторону для показа
+  factSlots = shuffle([...factDeck.facts]).map(f => ({
+    ...f,
+    showName: Math.random() < 0.5  // true = лицо: имя, false = лицо: должность
+  }));
   factAgain = [];
+  factMastered = [];
   factIdx = 0; factFlipped = false; factHasFlipped = false;
   factDoneCount = 0; factTotal = factSlots.length;
 
@@ -922,20 +950,40 @@ function startFactSession(factDeck) {
 
 function showFactCard() {
   if (factIdx >= factSlots.length && factAgain.length > 0) {
-    factSlots = [...factSlots, ...factAgain];
+    factSlots = [...factAgain];
     factAgain = [];
+    factIdx = 0;
   }
   if (factIdx >= factSlots.length) {
-    document.getElementById('fact-done-sub').textContent = `Просмотрено ${factTotal} карточек`;
+    document.getElementById('fact-done-sub').textContent =
+      `Просмотрено: ${factTotal} · Выучено: ${factMastered.length}`;
     showScreen('screen-fact-done');
     return;
   }
 
   const c = factSlots[factIdx];
   const ci = document.getElementById('factCardInner');
-  document.getElementById('factQuestionEl').textContent = c.q;
-  document.getElementById('factAnswerEl').textContent = c.a;
-  document.getElementById('factSubEl').textContent = c.sub || '';
+
+  // Лицевая сторона
+  if (c.showName) {
+    // Лицо: имя → Оборот: должность
+    document.getElementById('factFrontEl').textContent = c.name;
+    document.getElementById('factBackNameEl').textContent = c.name;
+    document.getElementById('factBackRoleEl').textContent = c.role;
+    document.getElementById('factBackRoleRuEl').textContent = c.role_ru;
+    document.getElementById('factRoundBadge').textContent = 'Имя → Должность';
+    document.getElementById('factTapHint').textContent = 'нажми — узнай должность';
+  } else {
+    // Лицо: должность → Оборот: имя
+    document.getElementById('factFrontEl').innerHTML =
+      `<span style="font-size:16px;font-weight:700;">${c.role}</span><br><span style="font-size:13px;color:var(--muted);font-weight:400;">${c.role_ru}</span>`;
+    document.getElementById('factBackNameEl').textContent = c.role_ru;
+    document.getElementById('factBackRoleEl').textContent = c.name;
+    document.getElementById('factBackRoleRuEl').textContent = c.role;
+    document.getElementById('factRoundBadge').textContent = 'Должность → Имя';
+    document.getElementById('factTapHint').textContent = 'нажми — узнай имя';
+  }
+
   ci.style.transition = 'none';
   ci.classList.remove('flipped');
   factFlipped = false; factHasFlipped = false;
@@ -955,12 +1003,21 @@ function handleFactCardClick() {
 }
 
 function factAnswer(type) {
-  if (type === 'again') factAgain.push(factSlots[factIdx]);
-  else factDoneCount++;
+  const c = factSlots[factIdx];
+  if (type === 'again') {
+    factAgain.push({...c, showName: Math.random() < 0.5});
+  } else if (type === 'ok') {
+    factDoneCount++;
+  } else if (type === 'mastered') {
+    factDoneCount++;
+    factMastered.push(c);
+    saveMastered(currentFactDeck.id, [{w: c.name, t: c.role_ru}]);
+  }
   if (tg) tg.HapticFeedback.impactOccurred('medium');
   factIdx++;
   if (factIdx >= factSlots.length && !factAgain.length) {
-    document.getElementById('fact-done-sub').textContent = `Просмотрено ${factTotal} карточек`;
+    document.getElementById('fact-done-sub').textContent =
+      `Просмотрено: ${factTotal} · Выучено: ${factMastered.length}`;
     showScreen('screen-fact-done');
   } else {
     showFactCard();
