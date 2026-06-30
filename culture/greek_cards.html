@@ -422,7 +422,6 @@
       <div class="card-face front">
         <div class="flip-corner">↩︎</div>
         <div class="word" id="wordEl"></div>
-        <div class="tap-hint" id="tapHint">нажми для перевода</div>
       </div>
       <div class="card-face back">
         <div class="translation" id="transEl"></div>
@@ -454,7 +453,6 @@
       <div class="card-face front" style="gap:6px;">
         <div class="flip-corner">↩︎</div>
         <div class="word" id="factFrontEl" style="font-size:22px; text-align:center;"></div>
-        <div class="tap-hint" id="factTapHint">нажми для ответа</div>
       </div>
       <div class="card-face back" style="gap:10px;">
         <div id="factBackNameEl" style="font-size:14px; color:var(--muted); text-align:center;"></div>
@@ -866,7 +864,6 @@ function showCard() {
   cardInner.style.transition = 'none';
   cardInner.classList.remove('flipped');
   flipped = false; hasFlippedOnce = false;
-  document.getElementById('tapHint')?.classList.remove('hidden');
   requestAnimationFrame(() => { cardInner.style.transition = ''; });
   updateProgress();
 
@@ -887,7 +884,6 @@ function handleCardClick() {
   ci.classList.toggle('flipped', flipped);
   if (flipped && !hasFlippedOnce) {
     hasFlippedOnce = true;
-    document.getElementById('tapHint')?.classList.add('hidden');
   }
 }
 
@@ -972,7 +968,6 @@ function showFactCard() {
     document.getElementById('factBackRoleEl').textContent = c.role;
     document.getElementById('factBackRoleRuEl').textContent = c.role_ru;
     document.getElementById('factRoundBadge').textContent = 'Имя → Должность';
-    document.getElementById('factTapHint').textContent = 'нажми — узнай должность';
   } else {
     // Лицо: должность → Оборот: имя
     document.getElementById('factFrontEl').innerHTML =
@@ -981,13 +976,11 @@ function showFactCard() {
     document.getElementById('factBackRoleEl').textContent = c.name;
     document.getElementById('factBackRoleRuEl').textContent = c.role;
     document.getElementById('factRoundBadge').textContent = 'Должность → Имя';
-    document.getElementById('factTapHint').textContent = 'нажми — узнай имя';
   }
 
   ci.style.transition = 'none';
   ci.classList.remove('flipped');
   factFlipped = false; factHasFlipped = false;
-  document.getElementById('factTapHint')?.classList.remove('hidden');
   requestAnimationFrame(() => { ci.style.transition = ''; });
   updateFactProgress();
 }
@@ -998,7 +991,6 @@ function handleFactCardClick() {
   ci.classList.toggle('flipped', factFlipped);
   if (factFlipped && !factHasFlipped) {
     factHasFlipped = true;
-    document.getElementById('factTapHint')?.classList.add('hidden');
   }
 }
 
