@@ -359,7 +359,7 @@
 
     <div class="deck-card">
       <div class="deck-name">Должностные лица, даты и пр.</div>
-      <div class="deck-meta">Факты для запоминания · скоро</div>
+      <div class="deck-meta">Должностные лица и факты · 28 карточек</div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startFactSession(FACT_DECKS[0])">Учить факты</button>
       </div>
@@ -996,7 +996,7 @@ function startFactSession(factDeck) {
   backTarget = 'screen-section-exam';
 
   if (!factDeck.facts?.length) {
-    alert('Раздел в разработке — факты появятся скоро!');
+    goBack();
     return;
   }
 
