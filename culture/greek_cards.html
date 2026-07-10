@@ -404,18 +404,92 @@
       </div>
     </div>
 
+    <div class="deck-card">
+      <div class="deck-name">Цвета</div>
+      <div class="deck-meta">4 слова</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('colors'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('colors'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
+
+    <div class="deck-card">
+      <div class="deck-name">Правильные глаголы</div>
+      <div class="deck-meta">6 слов</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('verbs_regular'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('verbs_regular'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
+
+    <div class="deck-card">
+      <div class="deck-name">Возвратные глаголы (-ομαι)</div>
+      <div class="deck-meta">2 слова</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('verbs_reflexive'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('verbs_reflexive'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
+
+    <div class="deck-card">
+      <div class="deck-name">Неправильные глаголы</div>
+      <div class="deck-meta">6 слов · с формой аориста</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('verbs_irregular'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('verbs_irregular'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
+
+    <div class="deck-card">
+      <div class="deck-name">Наречия и выражения</div>
+      <div class="deck-meta">5 слов</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('adverbs'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('adverbs'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
+
+    <div class="deck-card">
+      <div class="deck-name">Животные</div>
+      <div class="deck-meta">2 слова</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('animals'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('animals'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
+
+    <div class="deck-card">
+      <div class="deck-name">Развлечения</div>
+      <div class="deck-meta">5 слов</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('entertainment'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('entertainment'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
+
+    <div class="deck-card">
+      <div class="deck-name">Дом и быт</div>
+      <div class="deck-meta">4 слова</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('home'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('home'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
+
+    <div class="deck-card">
+      <div class="deck-name">Остальное</div>
+      <div class="deck-meta">9 слов</div>
+      <div class="deck-btns">
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('other'), 1, 'screen-section-topics')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('other'), 'screen-section-topics')">рус → греч</button>
+      </div>
+    </div>
+
     <button class="btn-mastered-link" onclick="showAllMastered()">★ Выученные слова</button>
   </div>
 </div>
 
 <!-- ══ CARDS ══ -->
-<div class="screen" id="screen-cards">
-  <div class="top-bar">
-    <div class="back-btn" id="cards-back-btn" onclick="goBack()">← Назад</div>
-    <div class="round-badge" id="roundBadge">греч → рус</div>
-    <div class="counter" id="counter"></div>
-  </div>
-  <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
 
   <div class="card-wrap" onclick="handleCardClick()">
     <div class="card-inner" id="cardInner">
@@ -909,7 +983,7 @@ async function startRound2FromSession() {
 }
 
 async function startAllWordsSession(startRound) {
-  const allWords = [...DECKS, ...TOPIC_DECKS].reduce((acc, d) => acc.concat(d.words), []);
+  const allWords = [...DECKS, ...ALL_TOPIC_DECKS].reduce((acc, d) => acc.concat(d.words), []);
   currentDeck = { id: 'all_words', name: 'Все слова', words: allWords };
   backTarget = 'screen-section-topics';
   await startSession(currentDeck, startRound, 'screen-section-topics');
@@ -1127,6 +1201,7 @@ const TOPIC_DECKS = [
       {w:"λεπτό χείλος", t:"тонкие губы"},
       {w:"γυαλιά", t:"очки"},
       {w:"μέγεθος", t:"размер"},
+      {w:"ανεπανάληπτος, -η, -ο", t:"неповторимый"},
     ]
   },
   {
@@ -1144,12 +1219,122 @@ const TOPIC_DECKS = [
       {w:"συνετός", t:"разумный, рассудительный"},
       {w:"σταθερός χαρακτήρας", t:"устойчивый характер"},
       {w:"χαρακτήρας", t:"характер"},
+      {w:"κακόκεφος, -η, -ο", t:"капризный, в плохом настроении"},
+      {w:"καταθλιπτικός, -ή, -ό", t:"депрессивный"},
+      {w:"κυριευμένος, -η, -ο", t:"одержимый"},
+      {w:"ευγνωμοσύνη, η", t:"благодарность"},
     ]
   }
 ];
 
+// Расширяем существующие темы
+// (добавляем слова в appearance и character через отдельные колоды)
+
+const TOPIC_DECKS_EXTRA = [
+  {
+    id: 'colors',
+    name: 'Цвета',
+    words: [
+      {w:"βυσσινής, -ή, -ί", t:"малиновый, вишнёвый"},
+      {w:"κιτρινιάρικος, -η, -ο", t:"желтоватый"},
+      {w:"κατάμαυρος, -η, -ο", t:"чёрный как смоль"},
+      {w:"ζωηρόχρωμος, -η, -ο", t:"яркий, цветастый"},
+    ]
+  },
+  {
+    id: 'verbs_regular',
+    name: 'Правильные глаголы',
+    words: [
+      {w:"εκλιπαρώ", t:"умолять"},
+      {w:"προειδοποιώ", t:"предупреждать"},
+      {w:"κραυγάζω", t:"кричать"},
+      {w:"χρωστώ", t:"быть должным"},
+      {w:"τσακίζω", t:"раздавить, сломать"},
+      {w:"διαπιστώνω", t:"обнаруживать, устанавливать"},
+    ]
+  },
+  {
+    id: 'verbs_reflexive',
+    name: 'Возвратные глаголы (-ομαι)',
+    words: [
+      {w:"ισχυρίζομαι", t:"утверждать"},
+      {w:"κινούμαι", t:"двигаться"},
+    ]
+  },
+  {
+    id: 'verbs_irregular',
+    name: 'Неправильные глаголы',
+    words: [
+      {w:"αναφέρω → ανέφερα", t:"сообщать"},
+      {w:"επιτρέπω → επέτρεψα", t:"позволять"},
+      {w:"καταλαμβάνω → κατέλαβα", t:"захватывать, занимать"},
+      {w:"βάζω → έβαλα", t:"класть, ставить"},
+      {w:"πιάνω → έπιασα", t:"хватать, ловить"},
+      {w:"μετανιώνω → μετάνιωσα", t:"сожалеть"},
+    ]
+  },
+  {
+    id: 'adverbs',
+    name: 'Наречия и выражения',
+    words: [
+      {w:"εντούτοις", t:"тем не менее (книжное)"},
+      {w:"ανάποδα", t:"вверх тормашками"},
+      {w:"κατά πόδας", t:"по пятам"},
+      {w:"αναπαυτικά", t:"удобно, комфортно"},
+      {w:"για καλή του τύχη", t:"на его счастье"},
+    ]
+  },
+  {
+    id: 'animals',
+    name: 'Животные',
+    words: [
+      {w:"νυχτερίδα, η", t:"летучая мышь"},
+      {w:"σαύρα, η", t:"ящерица"},
+    ]
+  },
+  {
+    id: 'entertainment',
+    name: 'Развлечения',
+    words: [
+      {w:"θέαμα, το", t:"зрелище"},
+      {w:"πυροτέχνημα, το", t:"фейерверк"},
+      {w:"κρότος, ο", t:"хлопок, щелчок"},
+      {w:"συναρπαστικός, -ή, -ό", t:"увлекательный"},
+      {w:"τρομακτικός, -ή, -ό", t:"страшный"},
+    ]
+  },
+  {
+    id: 'home',
+    name: 'Дом и быт',
+    words: [
+      {w:"συρτάρι, το", t:"ящик (мебели)"},
+      {w:"μολυβοθήκη, η", t:"пенал"},
+      {w:"σφουγγάρισμα, το", t:"мытьё полов"},
+      {w:"κοπριά, η", t:"навοз"},
+    ]
+  },
+  {
+    id: 'other',
+    name: 'Остальное',
+    words: [
+      {w:"αδίκημα, το", t:"преступление"},
+      {w:"χειροπέδες, οι", t:"наручники"},
+      {w:"ατιμώρητος, -η, -ο", t:"безнαказанный"},
+      {w:"φήμη, η", t:"репутация"},
+      {w:"όλεθρος, ο", t:"погибель, хаос"},
+      {w:"ρύπανση, η", t:"загрязнение"},
+      {w:"παραδειγματικός, -ή, -ό", t:"образцовый"},
+      {w:"περιεχόμενο, το", t:"содержимое"},
+      {w:"παρουσία, η", t:"присутствие"},
+    ]
+  }
+];
+
+// Объединяем все тематические колоды
+const ALL_TOPIC_DECKS = [...TOPIC_DECKS, ...TOPIC_DECKS_EXTRA];
+
 function getTopicDeck(id) {
-  return TOPIC_DECKS.find(d => d.id === id);
+  return ALL_TOPIC_DECKS.find(d => d.id === id);
 }
 
 // ── UTILS ──
@@ -1165,7 +1350,7 @@ function shuffle(arr) {
 async function showAllMastered() {
   backTarget = document.querySelector('.screen.active')?.id || 'screen-main';
   showScreen('screen-all-mastered');
-  const allDecks = [...DECKS, ...TOPIC_DECKS];
+  const allDecks = [...DECKS, ...ALL_TOPIC_DECKS];
   const list = document.getElementById('all-mastered-list');
   const count = document.getElementById('all-mastered-count');
   list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:20px 0;text-align:center;">Загрузка...</div>';
@@ -1205,7 +1390,7 @@ async function showAllMastered() {
 
 // Обновляем счётчик "Все слова"
 document.getElementById('all-words-count').textContent =
-  [...DECKS, ...TOPIC_DECKS].reduce((s, d) => s + d.words.length, 0);
+  [...DECKS, ...ALL_TOPIC_DECKS].reduce((s, d) => s + d.words.length, 0);
 </script>
 </body>
 </html>
