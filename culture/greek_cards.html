@@ -35,6 +35,9 @@
   .screen { display: none; flex-direction: column; flex: 1; min-height: 100vh; }
   .screen.active { display: flex; }
 
+  /* Prevent hidden screens from bleeding through */
+  body { overflow-x: hidden; }
+
   /* ══ ГЛАВНЫЙ ЭКРАН ══ */
   .main-wrap {
     display: flex;
@@ -497,6 +500,13 @@
 </div>
 
 <!-- ══ CARDS ══ -->
+<div class="screen" id="screen-cards">
+  <div class="top-bar">
+    <div class="back-btn" id="cards-back-btn" onclick="goBack()">← Назад</div>
+    <div class="round-badge" id="roundBadge">греч → рус</div>
+    <div class="counter" id="counter"></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
 
   <div class="card-wrap" onclick="handleCardClick()">
     <div class="card-inner" id="cardInner">
