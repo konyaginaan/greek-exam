@@ -292,13 +292,20 @@
 
   /* ══ ALL MASTERED ══ */
   .mastered-list-wrap { display: flex; flex-direction: column; overflow-y: auto; flex: 1; }
-  .mastered-row {
+  .mastered-row { 
     padding: 0.65rem 0; border-bottom: 1px solid var(--border);
-    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
   }
   .mastered-row:last-child { border-bottom: none; }
-  .mastered-word { font-size: 15px; font-weight: 700; color: var(--text); }
-  .mastered-trans { font-size: 13px; color: var(--muted); text-align: right; }
+  .mastered-word { font-size: 15px; font-weight: 700; color: var(--text); flex: 1; }
+  .mastered-trans { font-size: 13px; color: var(--muted); flex: 1; text-align: left; }
+  .mastered-del {
+    background: none; border: none; cursor: pointer;
+    font-size: 16px; color: var(--muted); padding: 4px 6px;
+    border-radius: 6px; line-height: 1; flex-shrink: 0;
+    opacity: 0.4;
+  }
+  .mastered-del:active { opacity: 1; color: #CC3366; }
 
   .btn-mastered-link {
     background: none; border: none; cursor: pointer;
@@ -1347,6 +1354,14 @@ function shuffle(arr) {
 }
 
 // ── ALL MASTERED ──
+async function removeMastered(deckId, word) {
+  const existing = (await loadMastered(deckId)) || [];
+  const updated = existing.filter(w => w.w !== word);
+  csSet('mastered_' + deckId, updated);
+  // Перерисовываем список
+  showAllMastered();
+}
+
 async function showAllMastered() {
   backTarget = document.querySelector('.screen.active')?.id || 'screen-main';
   showScreen('screen-all-mastered');
@@ -1382,7 +1397,8 @@ async function showAllMastered() {
     words.forEach(c => {
       const row = document.createElement('div');
       row.className = 'mastered-row';
-      row.innerHTML = `<span class="mastered-word">${c.w}</span><span class="mastered-trans">${c.t}</span>`;
+      const wordEsc = c.w.replace(/'/g, "\\'");
+      row.innerHTML = `<span class="mastered-word">${c.w}</span><span class="mastered-trans">${c.t}</span><button class="mastered-del" onclick="removeMastered('${deck.id}', '${wordEsc}')" title="Убрать из выученных">×</button>`;
       list.appendChild(row);
     });
   });
