@@ -1055,9 +1055,12 @@ async function startRound2FromSection(deck_data, fromSection) {
   backTarget = fromSection || 'screen-section-exam';
   showScreen('screen-loading');
   const saved = await loadStarWords(deck_data.id);
-  if (!saved?.length) { showScreen('screen-no-star'); return; }
+  const masteredWords = await loadMastered(deck_data.id);
+  const masteredSet = new Set((masteredWords || []).map(w => w.w));
+  const filtered = (saved || []).filter(w => !masteredSet.has(w.w));
+  if (!filtered.length) { showScreen('screen-no-star'); return; }
   round = 2;
-  activeSlots = shuffle([...saved]);
+  activeSlots = shuffle([...filtered]);
   again = []; mastered = [];
   idx = 0; flipped = false; doneInRound = 0;
   totalUnique = activeSlots.length;
@@ -1069,9 +1072,11 @@ async function startRound2FromSection(deck_data, fromSection) {
 
 async function startRound2FromSession() {
   const saved = await loadStarWords(currentDeck.id) || [];
+  const masteredWords = await loadMastered(currentDeck.id) || [];
+  const masteredSet = new Set(masteredWords.map(w => w.w));
   const map = {};
   [...saved, ...starWords].forEach(w => map[w.w] = w);
-  const all = Object.values(map);
+  const all = Object.values(map).filter(w => !masteredSet.has(w.w));
   if (!all.length) { showScreen('screen-no-star'); return; }
   round = 2;
   activeSlots = shuffle(all);
