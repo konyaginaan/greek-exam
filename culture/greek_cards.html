@@ -1020,32 +1020,50 @@ async function saveMastered(deckId, newWords) {
 }
 async function loadMastered(deckId) { return await csGet('mastered_' + deckId) || []; }
 
+async function loadActiveRound1(deckId) {
+  return await Promise.race([
+    csGet('active1_' + deckId),
+    new Promise(r => setTimeout(() => r(null), 2000))
+  ]);
+}
+function saveActiveRound1(deckId, keys) { csSet('active1_' + deckId, keys); }
+
 // ── СЕССИЯ: СЛОВА ──
 async function startSession(deck_data, startRound, fromSection) {
-  currentDeck = deck_data;
-  round = startRound || 1;
-  if (fromSection) backTarget = fromSection;
-
-  let wordsToUse = [...deck_data.words];
-  if (round === 1) {
-    const starred = await Promise.race([
-      loadStarWords(deck_data.id),
-      new Promise(r => setTimeout(() => r([]), 2000))
-    ]);
-    if (starred?.length > 0) {
-      const starredSet = new Set(starred.map(w => w.w));
-      wordsToUse = wordsToUse.filter(w => !starredSet.has(w.w));
-    }
+  if ((startRound || 1) === 2) {
+    return startRound2FromSection(deck_data, fromSection);
   }
 
-  const shuffled = shuffle(wordsToUse);
-  activeSlots = shuffled.slice(0, Math.min(ROUND_SIZE, shuffled.length));
+  currentDeck = deck_data;
+  round = 1;
+  if (fromSection) backTarget = fromSection;
+
+  const [starred, masteredWords, savedActive] = await Promise.all([
+    Promise.race([loadStarWords(deck_data.id), new Promise(r => setTimeout(() => r([]), 2000))]),
+    Promise.race([loadMastered(deck_data.id), new Promise(r => setTimeout(() => r([]), 2000))]),
+    loadActiveRound1(deck_data.id)
+  ]);
+  const excludeSet = new Set([...(starred || []), ...(masteredWords || [])].map(w => w.w));
+  const byKey = new Map(deck_data.words.map(w => [w.w, w]));
+
+  // Рабочий набор раунда 1 сохраняется между сессиями: слово покидает его,
+  // только когда его отложили в раунд 2 или выучили — тогда его место занимает новое.
+  let activeKeys = (savedActive || []).filter(k => byKey.has(k) && !excludeSet.has(k));
+  if (activeKeys.length < ROUND_SIZE) {
+    const activeSet = new Set(activeKeys);
+    const pool = deck_data.words.filter(w => !excludeSet.has(w.w) && !activeSet.has(w.w));
+    const need = Math.min(ROUND_SIZE - activeKeys.length, pool.length);
+    activeKeys = [...activeKeys, ...shuffle(pool).slice(0, need).map(w => w.w)];
+  }
+  saveActiveRound1(deck_data.id, activeKeys);
+
+  activeSlots = shuffle(activeKeys.map(k => byKey.get(k)).filter(Boolean));
   again = []; starWords = []; mastered = [];
   idx = 0; flipped = false; doneInRound = 0;
   totalUnique = activeSlots.length;
 
-  document.getElementById('roundBadge').textContent = round === 1 ? 'греч → рус' : 'рус → греч';
-  document.getElementById('btn-star').textContent = round === 1 ? '★ Отложить в рус → греч' : '★ Выучено';
+  document.getElementById('roundBadge').textContent = 'греч → рус';
+  document.getElementById('btn-star').textContent = '★ Отложить в рус → греч';
   showScreen('screen-cards');
   showCard();
 }
