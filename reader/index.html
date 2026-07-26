@@ -17,6 +17,7 @@
     --border: #e4e2d8;
   }
 
+  html, body { height: 100%; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--bg);
@@ -27,19 +28,9 @@
     margin: 0 auto;
   }
 
-  .screen { display: none; flex-direction: column; }
+  .screen { display: none; flex-direction: column; min-height: 100vh; }
   .screen.active { display: flex; }
 
-  .top-bar {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 20px 0 16px;
-  }
-  .title { font-size: 20px; font-weight: 800; flex-shrink: 0; }
-  .title em {
-    font-style: normal; background: var(--lime);
-    padding: 1px 6px; border-radius: 6px;
-  }
-  .top-bar-links { display: flex; align-items: center; gap: 14px; }
   .btn-link {
     background: none; border: none; cursor: pointer;
     font-size: 12px; font-weight: 700; color: var(--muted);
@@ -48,72 +39,73 @@
   }
   .btn-link:active { opacity: 0.6; }
 
-  /* ── ВВОД ── */
-  #view-input { flex-direction: column; gap: 20px; padding-bottom: 32px; }
-  .input-block { display: flex; flex-direction: column; gap: 10px; }
-  .input-block-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-  textarea {
-    width: 100%; min-height: 180px;
-    background: var(--surface); border: none; border-radius: 16px;
-    box-shadow: 0 2px 14px rgba(0,0,0,0.07);
-    padding: 1rem; font-size: 17px; line-height: 1.5;
-    font-family: inherit; color: var(--text);
-    resize: vertical;
+  /* ══════════════ БИБЛИОТЕКА ══════════════ */
+  #view-library { padding-bottom: 32px; }
+  .lib-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 20px 0 8px;
   }
-  textarea::placeholder { color: #bbb; }
+  .title { font-size: 20px; font-weight: 800; }
+  .title em {
+    font-style: normal; background: var(--lime);
+    padding: 1px 6px; border-radius: 6px;
+  }
+
+  /* Пустая библиотека: по центру, крупная кнопка — открыть файл можно
+     только явным тапом по кнопке, никакого перетаскивания (на телефоне
+     drag-and-drop всё равно не работает). */
+  .lib-empty {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+    gap: 10px; padding: 2rem 1rem;
+  }
+  .lib-empty-icon { font-size: 56px; margin-bottom: 6px; }
+  .lib-empty-title { font-size: 19px; font-weight: 800; }
+  .lib-empty-sub { font-size: 14px; color: var(--muted); line-height: 1.5; max-width: 26em; }
   .btn-primary {
+    margin-top: 12px;
     padding: 15px 32px; border: none; border-radius: 14px;
     font-size: 15px; font-weight: 800;
     background: var(--lime); color: var(--text);
-    cursor: pointer; width: 100%;
+    cursor: pointer; width: 100%; max-width: 320px;
   }
   .btn-primary:active { opacity: 0.85; }
 
-  .file-drop {
-    background: var(--surface); border: 2px dashed var(--border); border-radius: 16px;
-    padding: 2rem 1rem; text-align: center; cursor: pointer;
+  /* Обложка текущей книги — как плитка в iBooks: крупная, тап открывает чтение. */
+  .book-shelf { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 1rem; }
+  .book-cover {
+    width: 100%; max-width: 260px; aspect-ratio: 3/4;
+    background: linear-gradient(155deg, #fff 0%, #f6f4ef 100%);
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.16), 0 2px 6px rgba(0,0,0,0.08);
+    border: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 1.5rem;
+    position: relative;
   }
-  .file-drop:active { opacity: 0.8; }
-  .file-drop-icon { font-size: 32px; margin-bottom: 8px; }
-  .file-drop-text { font-size: 14px; color: var(--muted); }
-  #pdfFileInput { display: none; }
-
-  .resume-card {
-    background: var(--surface); border-radius: 16px;
-    box-shadow: 0 2px 14px rgba(0,0,0,0.07);
-    padding: 1.1rem 1.25rem; display: flex; align-items: center; gap: 12px;
+  .book-cover::before {
+    content: ''; position: absolute; left: 0; top: 8%; bottom: 8%; width: 6px;
+    background: rgba(0,0,0,0.06); border-radius: 2px 0 0 2px;
+  }
+  .book-cover:active { transform: scale(0.98); }
+  .book-cover-icon { font-size: 46px; }
+  .book-cover-name {
+    font-size: 15px; font-weight: 700; text-align: center;
+    word-break: break-word; line-height: 1.35;
+  }
+  .book-shelf-sub { font-size: 13px; color: var(--muted); }
+  .btn-outline {
+    padding: 12px 24px; border: 1.5px solid var(--border); border-radius: 12px;
+    background: none; color: var(--muted); font-size: 13px; font-weight: 700;
     cursor: pointer;
   }
-  .resume-card:active { opacity: 0.85; }
-  .resume-icon { font-size: 28px; flex-shrink: 0; }
-  .resume-text { flex: 1; min-width: 0; }
-  .resume-name { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .resume-sub { font-size: 12px; color: var(--muted); }
-  .resume-arrow { font-size: 18px; color: var(--muted); }
+  .btn-outline:active { opacity: 0.6; }
 
-  .divider-or {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;
-  }
-  .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  #pdfFileInput { display: none; }
 
-  /* ── ЧТЕНИЕ: ТЕКСТ ── */
-  #view-reader { flex-direction: column; padding-bottom: 60px; }
-  .reader-card {
-    background: var(--surface); border-radius: 18px;
-    box-shadow: 0 2px 14px rgba(0,0,0,0.07);
-    padding: 1.5rem 1.25rem;
-    font-size: 20px; line-height: 1.85;
-  }
-  .w {
-    cursor: pointer; border-radius: 5px;
-    padding: 1px 2px; margin: -1px -2px;
-    transition: background 0.12s;
-  }
-  .w:active, .w.active { background: var(--lime); }
-
-  /* ── ЧТЕНИЕ: PDF ── */
-  #pdfContainer { display: flex; flex-direction: column; padding-bottom: 60px; }
+  /* ══════════════ ЧТЕНИЕ ══════════════ */
+  #view-pdf { padding: 0; }
+  #pdfContainer { display: flex; flex-direction: column; padding: 64px 1rem 48px; }
   .pdf-page { position: relative; margin: 0 auto 14px; background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; }
   .pdf-page canvas { display: block; width: 100%; height: 100%; }
   .pdf-page-loading {
@@ -133,7 +125,45 @@
   }
   .textLayer ::selection { background: rgba(170,221,0,0.35); }
 
-  /* ── ПЕРЕВОД (панель снизу) ── */
+  /* Верхняя и нижняя панель читалки — полупрозрачные, скрываются по тапу
+     по странице (как в iBooks): страница занимает весь экран, чтение
+     ничем не перегружено, чтобы вызвать панель — один тап по пустому месту. */
+  .reader-chrome {
+    position: fixed; left: 0; right: 0; top: 0;
+    max-width: 640px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) 1rem 14px;
+    background: rgba(240,237,232,0.88);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    z-index: 30;
+    opacity: 1; transform: translateY(0);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .reader-chrome.hidden { opacity: 0; transform: translateY(-100%); pointer-events: none; }
+  .chrome-back {
+    background: none; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 700; color: var(--text);
+    flex-shrink: 0;
+  }
+  .chrome-back:active { opacity: 0.6; }
+  .chrome-title {
+    flex: 1; min-width: 0; text-align: center;
+    font-size: 13px; font-weight: 700; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .page-indicator {
+    position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+    background: rgba(26,26,26,0.75); color: #fff;
+    font-size: 12px; font-weight: 600;
+    padding: 5px 12px; border-radius: 20px;
+    z-index: 30; pointer-events: none;
+    opacity: 1; transition: opacity 0.2s ease;
+  }
+  .page-indicator.hidden { opacity: 0; }
+
+  /* ══════════════ ПЕРЕВОД (панель снизу) ══════════════ */
   .translate-panel {
     position: fixed; left: 0; right: 0; bottom: 0;
     max-width: 640px; margin: 0 auto;
@@ -171,8 +201,12 @@
   }
   .backdrop.show { opacity: 1; pointer-events: auto; }
 
-  /* ── СОХРАНЁННЫЕ СЛОВА ── */
+  /* ══════════════ СОХРАНЁННЫЕ СЛОВА ══════════════ */
   #view-saved { padding-bottom: 32px; gap: 14px; }
+  .saved-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 20px 0 8px;
+  }
   .saved-actions { display: flex; gap: 10px; }
   .btn-secondary {
     flex: 1; padding: 12px; border: none; border-radius: 12px;
@@ -202,44 +236,30 @@
 </head>
 <body>
 
-<div class="top-bar">
-  <div class="title">Greek <em>Reader</em></div>
-  <div class="top-bar-links">
-    <button class="btn-link" id="btn-saved" onclick="openSaved()">Слова (<span id="savedCount">0</span>)</button>
-    <button class="btn-link" id="btn-edit" style="display:none;" onclick="showInput()">Другая книга</button>
+<div class="screen active" id="view-library">
+  <div class="lib-top">
+    <div class="title">Greek <em>Reader</em></div>
+    <button class="btn-link" onclick="openSaved()">Слова (<span id="savedCount">0</span>)</button>
   </div>
-</div>
-
-<div class="screen active" id="view-input">
-  <div id="resumeBlock" style="display:none;"></div>
-
-  <div class="input-block">
-    <div class="input-block-title">Загрузить PDF</div>
-    <div class="file-drop" onclick="document.getElementById('pdfFileInput').click()">
-      <div class="file-drop-icon">📄</div>
-      <div class="file-drop-text">Нажми, чтобы выбрать PDF-файл</div>
-    </div>
-    <input type="file" id="pdfFileInput" accept="application/pdf" onchange="handlePdfFile(this.files[0])">
-  </div>
-
-  <div class="divider-or">или</div>
-
-  <div class="input-block">
-    <div class="input-block-title">Вставить текст</div>
-    <textarea id="textInput" placeholder="Επικόλλησε εδώ το κείμενο στα ελληνικά..."></textarea>
-    <button class="btn-primary" onclick="showTextReader()">Показать текст</button>
-  </div>
-</div>
-
-<div class="screen" id="view-reader">
-  <div class="reader-card" id="readerCard"></div>
+  <div id="libraryBody"></div>
+  <input type="file" id="pdfFileInput" accept="application/pdf" onchange="handlePdfFile(this.files[0])">
 </div>
 
 <div class="screen" id="view-pdf">
+  <div class="reader-chrome" id="readerChrome">
+    <button class="chrome-back" onclick="showLibrary()">‹ Библиотека</button>
+    <div class="chrome-title" id="chromeTitle"></div>
+    <button class="btn-link" onclick="openSaved()">Слова</button>
+  </div>
   <div id="pdfContainer"></div>
+  <div class="page-indicator" id="pageIndicator"></div>
 </div>
 
 <div class="screen" id="view-saved">
+  <div class="saved-top">
+    <div class="title">Greek <em>Reader</em></div>
+    <button class="btn-link" onclick="showLibrary()">Библиотека</button>
+  </div>
   <div class="saved-actions">
     <button class="btn-secondary" onclick="copySavedWords()">Скопировать список</button>
   </div>
@@ -264,8 +284,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dis
 // ══════════════════════════════════════════════════════════════
 // ХРАНИЛИЩЕ
 // ══════════════════════════════════════════════════════════════
-const STORAGE_TEXT = 'reader_text_v1';
-const STORAGE_LAST_MODE = 'reader_last_mode_v1';
 const STORAGE_SCROLL_PDF = 'reader_pdf_scroll_v1';
 const STORAGE_CACHE = 'reader_translate_cache_v1';
 const STORAGE_SAVED = 'reader_saved_words_v1';
@@ -310,31 +328,24 @@ function persistSavedWords() {
   document.getElementById('savedCount').textContent = savedWords.length;
 }
 
-// Греческие буквы (включая многотональные диакритики) — то, что оборачивается в тап-слово.
-// \p{Script=Greek}, а не диапазон кодов: у греческого знака вопроса ";" и точки-разделителя "·"
-// код лежит в том же unicode-блоке, что и буквы, но Script=Common — они сюда не попадают.
+// Греческие буквы (включая многотональные диакритики) — то, что распознаётся
+// как тап-слово. \p{Script=Greek}, а не диапазон кодов: у греческого знака
+// вопроса ";" и точки-разделителя "·" код лежит в том же unicode-блоке, что
+// и буквы, но Script=Common — они сюда не попадают.
 const GREEK_RE_CHAR = /\p{Script=Greek}/u;
-const GREEK_WORD_RE = /\p{Script=Greek}+/gu;
-
-function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 // ══════════════════════════════════════════════════════════════
 // НАВИГАЦИЯ ЭКРАНОВ
 // ══════════════════════════════════════════════════════════════
-let currentMode = null; // 'text' | 'pdf'
-
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
-function showInput() {
+async function showLibrary() {
   closePanel();
-  showScreen('view-input');
-  document.getElementById('btn-edit').style.display = 'none';
-  renderResumeBlock();
+  showScreen('view-library');
+  await renderLibrary();
 }
 
 async function openSaved() {
@@ -344,45 +355,51 @@ async function openSaved() {
   renderSavedList();
 }
 
+function pickFile() { document.getElementById('pdfFileInput').click(); }
+
 // ══════════════════════════════════════════════════════════════
-// РЕЖИМ: ПРОСТОЙ ТЕКСТ
+// БИБЛИОТЕКА
 // ══════════════════════════════════════════════════════════════
-function renderTextCard(text) {
-  const escaped = escapeHtml(text);
-  const html = escaped.replace(GREEK_WORD_RE, w => `<span class="w" data-w="${w}">${w}</span>`);
-  document.getElementById('readerCard').innerHTML = html.replace(/\n/g, '<br>');
+async function renderLibrary() {
+  const body = document.getElementById('libraryBody');
+  const record = await idbGet(IDB_KEY);
+
+  if (!record) {
+    body.innerHTML = `
+      <div class="lib-empty">
+        <div class="lib-empty-icon">📚</div>
+        <div class="lib-empty-title">Пока пусто</div>
+        <div class="lib-empty-sub">Открой PDF-файл на греческом — потом можно будет тапнуть по любому слову, чтобы увидеть перевод</div>
+        <button class="btn-primary" onclick="pickFile()">Открыть PDF</button>
+      </div>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="book-shelf">
+      <button class="book-cover" id="bookCoverBtn">
+        <div class="book-cover-icon">📖</div>
+        <div class="book-cover-name"></div>
+      </button>
+      <div class="book-shelf-sub">Продолжить чтение</div>
+      <button class="btn-outline" onclick="pickFile()">Открыть другой файл</button>
+    </div>`;
+  body.querySelector('.book-cover-name').textContent = record.name;
+  body.querySelector('#bookCoverBtn').addEventListener('click', openPdfFromStorage);
 }
 
-function showTextReader() {
-  const text = document.getElementById('textInput').value.trim();
-  if (!text) return;
-  localStorage.setItem(STORAGE_TEXT, text);
-  localStorage.setItem(STORAGE_LAST_MODE, 'text');
-  currentMode = 'text';
-  renderTextCard(text);
-  showScreen('view-reader');
-  document.getElementById('btn-edit').style.display = 'block';
-}
-
-document.getElementById('readerCard').addEventListener('click', e => {
-  const el = e.target.closest('.w');
-  if (!el) return;
-  document.querySelectorAll('.w.active').forEach(x => x.classList.remove('active'));
-  el.classList.add('active');
-  openPanel(el.dataset.w);
-});
-
 // ══════════════════════════════════════════════════════════════
-// РЕЖИМ: PDF
+// ЧТЕНИЕ PDF
 // ══════════════════════════════════════════════════════════════
 const pdfWordMaps = new WeakMap(); // textLayer div -> {text, nodeStart}
 let scrollSaveTimer = null;
+let currentPages = []; // [{viewport, wrap}] текущей открытой книги — для индикатора страницы
+let chromeVisible = true;
 
 async function handlePdfFile(file) {
   if (!file) return;
   const buf = await file.arrayBuffer();
   await idbSet(IDB_KEY, { name: file.name, data: buf, savedAt: Date.now() });
-  localStorage.setItem(STORAGE_LAST_MODE, 'pdf');
   localStorage.removeItem(STORAGE_SCROLL_PDF);
   await openPdfFromStorage();
 }
@@ -390,10 +407,9 @@ async function handlePdfFile(file) {
 async function openPdfFromStorage() {
   const record = await idbGet(IDB_KEY);
   if (!record) return false;
-  currentMode = 'pdf';
-  localStorage.setItem(STORAGE_LAST_MODE, 'pdf');
+  document.getElementById('chromeTitle').textContent = record.name;
+  setChrome(true);
   showScreen('view-pdf');
-  document.getElementById('btn-edit').style.display = 'block';
   await renderPdf(record.data);
   return true;
 }
@@ -403,7 +419,7 @@ async function renderPdf(arrayBuffer) {
   container.innerHTML = '';
   const doc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
 
-  const targetWidth = Math.min(document.body.clientWidth, 640) - 4;
+  const targetWidth = Math.min(document.body.clientWidth, 640) - 32;
   const pageInfos = [];
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
@@ -419,6 +435,7 @@ async function renderPdf(arrayBuffer) {
     container.appendChild(wrap);
     pageInfos.push({ page, viewport, wrap, rendered: false });
   }
+  currentPages = pageInfos;
 
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -436,16 +453,31 @@ async function renderPdf(arrayBuffer) {
   const savedScroll = parseInt(localStorage.getItem(STORAGE_SCROLL_PDF) || '0', 10);
   if (savedScroll > 0) requestAnimationFrame(() => window.scrollTo(0, savedScroll));
 
+  updatePageIndicator();
   window.removeEventListener('scroll', onReaderScroll);
   window.addEventListener('scroll', onReaderScroll);
 }
 
 function onReaderScroll() {
-  if (currentMode !== 'pdf') return;
   clearTimeout(scrollSaveTimer);
   scrollSaveTimer = setTimeout(() => {
     localStorage.setItem(STORAGE_SCROLL_PDF, String(window.scrollY));
   }, 250);
+  updatePageIndicator();
+}
+
+function updatePageIndicator() {
+  const el = document.getElementById('pageIndicator');
+  if (!currentPages.length) { el.textContent = ''; return; }
+  const probe = window.scrollY + innerHeight * 0.35;
+  let cum = 64, current = 1; // 64 — верхний паддинг #pdfContainer
+  for (let i = 0; i < currentPages.length; i++) {
+    const h = currentPages[i].viewport.height + 14;
+    current = i + 1;
+    if (probe < cum + h) break;
+    cum += h;
+  }
+  el.textContent = current + ' / ' + currentPages.length;
 }
 
 async function renderPdfPage({ page, viewport, wrap }) {
@@ -480,14 +512,23 @@ async function renderPdfPage({ page, viewport, wrap }) {
   pdfWordMaps.set(textLayerDiv, { text, nodeStart });
 }
 
+// Тап по слову — перевод; тап по остальной части страницы (пустое место
+// между строк, поля) — показать/спрятать верхнюю панель, как в iBooks.
 document.getElementById('pdfContainer').addEventListener('click', e => {
   const tlayer = e.target.closest('.textLayer');
-  if (!tlayer) return;
-  const map = pdfWordMaps.get(tlayer);
-  if (!map) return;
-  const word = wordAtPoint(e.clientX, e.clientY, map);
-  if (word) openPanel(word);
+  if (tlayer) {
+    const map = pdfWordMaps.get(tlayer);
+    const word = map ? wordAtPoint(e.clientX, e.clientY, map) : null;
+    if (word) { openPanel(word); return; }
+  }
+  setChrome(!chromeVisible);
 });
+
+function setChrome(visible) {
+  chromeVisible = visible;
+  document.getElementById('readerChrome').classList.toggle('hidden', !visible);
+  document.getElementById('pageIndicator').classList.toggle('hidden', !visible);
+}
 
 function wordAtPoint(x, y, map) {
   let node, offset;
@@ -511,27 +552,6 @@ function wordAtPoint(x, y, map) {
   while (end < text.length && GREEK_RE_CHAR.test(text[end])) end++;
   const word = text.slice(start, end);
   return word || null;
-}
-
-// ══════════════════════════════════════════════════════════════
-// ЭКРАН ВВОДА: "продолжить книгу"
-// ══════════════════════════════════════════════════════════════
-async function renderResumeBlock() {
-  const block = document.getElementById('resumeBlock');
-  const record = await idbGet(IDB_KEY);
-  if (!record) { block.style.display = 'none'; block.innerHTML = ''; return; }
-  block.style.display = 'block';
-  block.innerHTML = `
-    <div class="resume-card" id="resumeCard">
-      <div class="resume-icon">📖</div>
-      <div class="resume-text">
-        <div class="resume-name"></div>
-        <div class="resume-sub">Продолжить чтение</div>
-      </div>
-      <div class="resume-arrow">›</div>
-    </div>`;
-  block.querySelector('.resume-name').textContent = record.name;
-  block.querySelector('#resumeCard').addEventListener('click', openPdfFromStorage);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -581,7 +601,6 @@ async function openPanel(word) {
 function closePanel() {
   document.getElementById('backdrop').classList.remove('show');
   document.getElementById('panel').classList.remove('show');
-  document.querySelectorAll('.w.active').forEach(x => x.classList.remove('active'));
 }
 
 function updateSaveButton() {
@@ -607,7 +626,7 @@ function renderSavedList() {
   const list = document.getElementById('savedList');
   list.innerHTML = '';
   if (!savedWords.length) {
-    list.innerHTML = '<div class="saved-empty">Пока пусто.<br>Открой книгу или текст, тапни слово и нажми «★ Сохранить слово».</div>';
+    list.innerHTML = '<div class="saved-empty">Пока пусто.<br>Открой книгу, тапни слово и нажми «★ Сохранить слово».</div>';
     return;
   }
   savedWords.slice().reverse().forEach(entry => {
@@ -645,8 +664,8 @@ async function copySavedWords() {
 // СТАРТ
 // ══════════════════════════════════════════════════════════════
 window.handlePdfFile = handlePdfFile;
-window.showTextReader = showTextReader;
-window.showInput = showInput;
+window.pickFile = pickFile;
+window.showLibrary = showLibrary;
 window.openSaved = openSaved;
 window.closePanel = closePanel;
 window.saveCurrentWord = saveCurrentWord;
@@ -655,21 +674,8 @@ window.copySavedWords = copySavedWords;
 persistSavedWords(); // обновить счётчик в шапке при загрузке
 
 (async () => {
-  const lastMode = localStorage.getItem(STORAGE_LAST_MODE);
-  if (lastMode === 'pdf') {
-    const opened = await openPdfFromStorage();
-    if (opened) return;
-  }
-  const savedText = localStorage.getItem(STORAGE_TEXT);
-  if (lastMode === 'text' && savedText) {
-    currentMode = 'text';
-    document.getElementById('textInput').value = savedText;
-    renderTextCard(savedText);
-    showScreen('view-reader');
-    document.getElementById('btn-edit').style.display = 'block';
-    return;
-  }
-  renderResumeBlock();
+  const opened = await openPdfFromStorage();
+  if (!opened) await renderLibrary();
 })();
 </script>
 </body>
