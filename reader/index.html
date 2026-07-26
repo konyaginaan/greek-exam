@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Читалка</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --lime: #AADD00;
+    --lime-dark: #8ab800;
+    --bg: #F0EDE8;
+    --surface: #ffffff;
+    --text: #1A1A1A;
+    --muted: #888888;
+    --border: #e4e2d8;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 1rem;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 0 16px;
+  }
+  .title { font-size: 20px; font-weight: 800; }
+  .title em {
+    font-style: normal; background: var(--lime);
+    padding: 1px 6px; border-radius: 6px;
+  }
+  .btn-link {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .btn-link:active { opacity: 0.6; }
+
+  /* ── ВВОД ТЕКСТА ── */
+  #view-input { display: flex; flex-direction: column; gap: 12px; padding-bottom: 32px; }
+  .hint { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  textarea {
+    width: 100%; min-height: 220px;
+    background: var(--surface); border: none; border-radius: 16px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.07);
+    padding: 1rem; font-size: 17px; line-height: 1.5;
+    font-family: inherit; color: var(--text);
+    resize: vertical;
+  }
+  textarea::placeholder { color: #bbb; }
+  .btn-primary {
+    padding: 15px 32px; border: none; border-radius: 14px;
+    font-size: 15px; font-weight: 800;
+    background: var(--lime); color: var(--text);
+    cursor: pointer; width: 100%;
+  }
+  .btn-primary:active { opacity: 0.85; }
+
+  /* ── ЧТЕНИЕ ── */
+  #view-reader { display: none; flex-direction: column; padding-bottom: 140px; }
+  .reader-card {
+    background: var(--surface); border-radius: 18px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.07);
+    padding: 1.5rem 1.25rem;
+    font-size: 20px; line-height: 1.85;
+  }
+  .w {
+    cursor: pointer; border-radius: 5px;
+    padding: 1px 2px; margin: -1px -2px;
+    transition: background 0.12s;
+  }
+  .w:active { background: var(--lime); }
+  .w.active { background: var(--lime); }
+
+  /* ── ПЕРЕВОД (панель снизу) ── */
+  .translate-panel {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    max-width: 640px; margin: 0 auto;
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+    padding: 1.25rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+    transform: translateY(110%);
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+    z-index: 50;
+  }
+  .translate-panel.show { transform: translateY(0); }
+  .tp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .tp-word { font-size: 24px; font-weight: 800; word-break: break-word; }
+  .tp-close {
+    background: var(--bg); border: none; border-radius: 50%;
+    width: 32px; height: 32px; flex-shrink: 0;
+    font-size: 16px; color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tp-translation { font-size: 18px; color: var(--text); min-height: 27px; }
+  .tp-translation.loading { color: var(--muted); font-style: italic; }
+  .tp-translation.error { color: #CC3366; }
+
+  .backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.15);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 40;
+  }
+  .backdrop.show { opacity: 1; pointer-events: auto; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="title">Greek <em>Reader</em></div>
+  <button class="btn-link" id="btn-edit" style="display:none;" onclick="showInput()">Другой текст</button>
+</div>
+
+<div id="view-input">
+  <div class="hint">Вставь греческий текст — потом можно будет тапнуть по любому слову, чтобы увидеть перевод.</div>
+  <textarea id="textInput" placeholder="Επικόλλησε εδώ το κείμενο στα ελληνικά..."></textarea>
+  <button class="btn-primary" id="btn-show" onclick="showReader()">Показать текст</button>
+</div>
+
+<div id="view-reader">
+  <div class="reader-card" id="readerCard"></div>
+</div>
+
+<div class="backdrop" id="backdrop" onclick="closePanel()"></div>
+<div class="translate-panel" id="panel">
+  <div class="tp-top">
+    <div class="tp-word" id="tpWord"></div>
+    <button class="tp-close" onclick="closePanel()">×</button>
+  </div>
+  <div class="tp-translation" id="tpTranslation"></div>
+</div>
+
+<script>
+const STORAGE_TEXT = 'reader_text_v1';
+const STORAGE_CACHE = 'reader_translate_cache_v1';
+
+const translateCache = JSON.parse(localStorage.getItem(STORAGE_CACHE) || '{}');
+let requestToken = 0;
+
+function saveCache() {
+  localStorage.setItem(STORAGE_CACHE, JSON.stringify(translateCache));
+}
+
+// Греческие буквы (включая многотональные диакритики) — то, что оборачивается в тап-слово.
+// \p{Script=Greek}, а не диапазон кодов: у греческого знака вопроса ";" и точки-разделителя "·"
+// код лежит в том же unicode-блоке, что и буквы, но Script=Common — они сюда не попадают.
+const GREEK_WORD_RE = /\p{Script=Greek}+/gu;
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderReader(text) {
+  const escaped = escapeHtml(text);
+  const html = escaped.replace(GREEK_WORD_RE, w =>
+    `<span class="w" data-w="${w}">${w}</span>`
+  );
+  document.getElementById('readerCard').innerHTML = html.replace(/\n/g, '<br>');
+}
+
+function showReader() {
+  const text = document.getElementById('textInput').value.trim();
+  if (!text) return;
+  localStorage.setItem(STORAGE_TEXT, text);
+  renderReader(text);
+  document.getElementById('view-input').style.display = 'none';
+  document.getElementById('view-reader').style.display = 'flex';
+  document.getElementById('btn-edit').style.display = 'block';
+}
+
+function showInput() {
+  closePanel();
+  document.getElementById('view-reader').style.display = 'none';
+  document.getElementById('view-input').style.display = 'flex';
+  document.getElementById('btn-edit').style.display = 'none';
+}
+
+document.getElementById('readerCard').addEventListener('click', e => {
+  const el = e.target.closest('.w');
+  if (!el) return;
+  document.querySelectorAll('.w.active').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  openPanel(el.dataset.w);
+});
+
+async function openPanel(word) {
+  document.getElementById('tpWord').textContent = word;
+  document.getElementById('backdrop').classList.add('show');
+  document.getElementById('panel').classList.add('show');
+
+  const key = word.toLowerCase();
+  const tEl = document.getElementById('tpTranslation');
+
+  if (translateCache[key]) {
+    tEl.textContent = translateCache[key];
+    tEl.className = 'tp-translation';
+    return;
+  }
+
+  tEl.textContent = 'Переводим…';
+  tEl.className = 'tp-translation loading';
+
+  const myToken = ++requestToken;
+  try {
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=el&tl=ru&dt=t&q=' + encodeURIComponent(word);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('bad status');
+    const data = await res.json();
+    const translated = data[0].map(x => x[0]).join('');
+    if (myToken !== requestToken) return; // пользователь уже тапнул другое слово
+    translateCache[key] = translated;
+    saveCache();
+    tEl.textContent = translated;
+    tEl.className = 'tp-translation';
+  } catch (err) {
+    if (myToken !== requestToken) return;
+    tEl.textContent = 'Не удалось перевести — проверь связь и попробуй ещё раз';
+    tEl.className = 'tp-translation error';
+  }
+}
+
+function closePanel() {
+  document.getElementById('backdrop').classList.remove('show');
+  document.getElementById('panel').classList.remove('show');
+  document.querySelectorAll('.w.active').forEach(x => x.classList.remove('active'));
+}
+
+// Восстанавливаем последний вставленный текст между заходами.
+const savedText = localStorage.getItem(STORAGE_TEXT);
+if (savedText) {
+  document.getElementById('textInput').value = savedText;
+  showReader();
+}
+</script>
+</body>
+</html>
