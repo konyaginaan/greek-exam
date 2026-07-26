@@ -992,41 +992,147 @@ let factDoneCount = 0, factTotal = 0;
 let factMastered = [];
 
 // ── CLOUD STORAGE ──
-function csSet(key, val) { if (tg?.CloudStorage) tg.CloudStorage.setItem(key, JSON.stringify(val)); }
+// Вне Telegram (и в старых клиентах) CloudStorage бросает исключение — сессия от этого падать не должна.
+function csSet(key, val) {
+  if (!tg?.CloudStorage) return;
+  try {
+    tg.CloudStorage.setItem(key, JSON.stringify(val), err => {
+      if (err) console.warn('CloudStorage setItem failed', key, err);
+    });
+  } catch (e) { console.warn('CloudStorage setItem threw', key, e); }
+}
 function csGet(key) {
   return new Promise(resolve => {
     if (!tg?.CloudStorage) { resolve(null); return; }
-    tg.CloudStorage.getItem(key, (err, val) => {
-      if (err || !val) { resolve(null); return; }
-      try { resolve(JSON.parse(val)); } catch { resolve(null); }
-    });
+    try {
+      tg.CloudStorage.getItem(key, (err, val) => {
+        if (err || !val) { resolve(null); return; }
+        try { resolve(JSON.parse(val)); } catch { resolve(null); }
+      });
+    } catch { resolve(null); }
   });
 }
-function csDel(key) { if (tg?.CloudStorage) tg.CloudStorage.removeItem(key); }
-
-async function saveStarWords(deckId, newWords) {
-  const existing = await csGet('star_' + deckId) || [];
-  const map = {};
-  [...existing, ...newWords].forEach(w => map[w.w] = w);
-  csSet('star_' + deckId, Object.values(map));
+function csDel(key) {
+  if (!tg?.CloudStorage) return;
+  try { tg.CloudStorage.removeItem(key); } catch {}
 }
-async function loadStarWords(deckId) { return await csGet('star_' + deckId) || []; }
 
-async function saveMastered(deckId, newWords) {
-  const existing = await csGet('mastered_' + deckId) || [];
-  const map = {};
-  [...existing, ...newWords].forEach(w => map[w.w] = w);
-  csSet('mastered_' + deckId, Object.values(map));
+// Списки слов хранятся как массив греческих ключей (не объектов) и режутся на части:
+// CloudStorage не принимает значение длиннее 4096 символов и молча теряет запись.
+// В базовом ключе лежит {n: <число частей>}, сами части — в baseKey__0, baseKey__1, …
+const CS_MAX_VALUE = 3800;
+const CS_TIMEOUT = 4000;
+
+const csListCache = {};   // baseKey → актуальный массив ключей
+const csListLoading = {}; // baseKey → промис первой загрузки
+const csChunkCount = {};  // baseKey → сколько частей записано, чтобы удалять лишние
+
+const csToKey = x => (typeof x === 'string' ? x : x?.w);
+
+function csChunk(keys) {
+  const chunks = [[]];
+  let len = 2;
+  for (const k of keys) {
+    const add = JSON.stringify(k).length + 1;
+    if (len + add > CS_MAX_VALUE && chunks[chunks.length - 1].length) {
+      chunks.push([k]); len = 2 + add;
+    } else {
+      chunks[chunks.length - 1].push(k); len += add;
+    }
+  }
+  return chunks;
 }
-async function loadMastered(deckId) { return await csGet('mastered_' + deckId) || []; }
 
-async function loadActiveRound1(deckId) {
-  return await Promise.race([
-    csGet('active1_' + deckId),
-    new Promise(r => setTimeout(() => r(null), 2000))
+async function csReadList(baseKey) {
+  const head = await csGet(baseKey);
+  // Старый формат: массив объектов {w,t} прямо в базовом ключе.
+  if (Array.isArray(head)) return head.map(csToKey).filter(Boolean);
+  const n = head && typeof head.n === 'number' ? head.n : 0;
+  if (!n) return [];
+  csChunkCount[baseKey] = n;
+  const parts = await Promise.all(
+    Array.from({ length: n }, (_, i) => csGet(baseKey + '__' + i))
+  );
+  return parts.flatMap(p => (Array.isArray(p) ? p : [])).map(csToKey).filter(Boolean);
+}
+
+function csWriteList(baseKey, keys) {
+  const chunks = csChunk(keys);
+  csSet(baseKey, { n: chunks.length });
+  chunks.forEach((c, i) => csSet(baseKey + '__' + i, c));
+  for (let i = chunks.length; i < (csChunkCount[baseKey] || 0); i++) csDel(baseKey + '__' + i);
+  csChunkCount[baseKey] = chunks.length;
+}
+
+function csLoadList(baseKey) {
+  if (baseKey in csListCache) return Promise.resolve(csListCache[baseKey]);
+  if (baseKey in csListLoading) return csListLoading[baseKey];
+  const p = csReadList(baseKey)
+    .catch(() => [])
+    .then(list => {
+      if (!(baseKey in csListCache)) csListCache[baseKey] = list;
+      delete csListLoading[baseKey];
+      return csListCache[baseKey];
+    });
+  csListLoading[baseKey] = p;
+  return p;
+}
+
+// Кэш читается ПОСЛЕ await, поэтому подряд идущие нажатия ★ не затирают друг друга:
+// раньше каждый вызов читал хранилище параллельно и записывал только своё слово.
+async function csAddToList(baseKey, keys) {
+  await csLoadList(baseKey);
+  const cur = csListCache[baseKey] || [];
+  const have = new Set(cur);
+  const merged = cur.concat(keys.filter(k => k && !have.has(k)));
+  if (merged.length === cur.length) return;
+  csListCache[baseKey] = merged;
+  csWriteList(baseKey, merged);
+}
+
+async function csRemoveFromList(baseKey, keys) {
+  const drop = new Set(Array.isArray(keys) ? keys : [keys]);
+  await csLoadList(baseKey);
+  const cur = csListCache[baseKey] || [];
+  const next = cur.filter(k => !drop.has(k));
+  if (next.length === cur.length) return;
+  csListCache[baseKey] = next;
+  csWriteList(baseKey, next);
+}
+
+function csSetList(baseKey, keys) {
+  csListCache[baseKey] = keys;
+  csWriteList(baseKey, keys);
+}
+
+const starKey = deckId => 'star_' + deckId;
+const masteredKey = deckId => 'mastered_' + deckId;
+
+async function saveStarWords(deckId, wordKeys) { await csAddToList(starKey(deckId), wordKeys); }
+async function loadStarWords(deckId) { return await csLoadList(starKey(deckId)); }
+
+// Выученное слово покидает и колоду рус → греч, иначе список ★ растёт бесконечно.
+async function saveMastered(deckId, wordKeys) {
+  await csAddToList(masteredKey(deckId), wordKeys);
+  await csRemoveFromList(starKey(deckId), wordKeys);
+}
+async function loadMastered(deckId) { return await csLoadList(masteredKey(deckId)); }
+
+function saveActiveRound1(deckId, keys) { csSetList('active1_' + deckId, keys); }
+
+// Возвращает ok:false, если хранилище не ответило вовремя — тогда прогресс не перезаписываем.
+async function loadDeckState(deckId) {
+  const res = await Promise.race([
+    Promise.all([
+      csLoadList(starKey(deckId)),
+      csLoadList(masteredKey(deckId)),
+      csLoadList('active1_' + deckId)
+    ]),
+    new Promise(r => setTimeout(() => r(null), CS_TIMEOUT))
   ]);
+  if (!res) return { star: [], mastered: [], active: [], ok: false };
+  return { star: res[0], mastered: res[1], active: res[2], ok: true };
 }
-function saveActiveRound1(deckId, keys) { csSet('active1_' + deckId, keys); }
 
 // ── СЕССИЯ: СЛОВА ──
 async function startSession(deck_data, startRound, fromSection) {
@@ -1037,25 +1143,22 @@ async function startSession(deck_data, startRound, fromSection) {
   currentDeck = deck_data;
   round = 1;
   if (fromSection) backTarget = fromSection;
+  showScreen('screen-loading');
 
-  const [starred, masteredWords, savedActive] = await Promise.all([
-    Promise.race([loadStarWords(deck_data.id), new Promise(r => setTimeout(() => r([]), 2000))]),
-    Promise.race([loadMastered(deck_data.id), new Promise(r => setTimeout(() => r([]), 2000))]),
-    loadActiveRound1(deck_data.id)
-  ]);
-  const excludeSet = new Set([...(starred || []), ...(masteredWords || [])].map(w => w.w));
+  const state = await loadDeckState(deck_data.id);
+  const excludeSet = new Set([...state.star, ...state.mastered]);
   const byKey = new Map(deck_data.words.map(w => [w.w, w]));
 
   // Рабочий набор раунда 1 сохраняется между сессиями: слово покидает его,
   // только когда его отложили в раунд 2 или выучили — тогда его место занимает новое.
-  let activeKeys = (savedActive || []).filter(k => byKey.has(k) && !excludeSet.has(k));
+  let activeKeys = state.active.filter(k => byKey.has(k) && !excludeSet.has(k));
   if (activeKeys.length < ROUND_SIZE) {
     const activeSet = new Set(activeKeys);
     const pool = deck_data.words.filter(w => !excludeSet.has(w.w) && !activeSet.has(w.w));
     const need = Math.min(ROUND_SIZE - activeKeys.length, pool.length);
     activeKeys = [...activeKeys, ...shuffle(pool).slice(0, need).map(w => w.w)];
   }
-  saveActiveRound1(deck_data.id, activeKeys);
+  if (state.ok) saveActiveRound1(deck_data.id, activeKeys);
 
   activeSlots = shuffle(activeKeys.map(k => byKey.get(k)).filter(Boolean));
   again = []; starWords = []; mastered = [];
@@ -1068,17 +1171,16 @@ async function startSession(deck_data, startRound, fromSection) {
   showCard();
 }
 
-async function startRound2FromSection(deck_data, fromSection) {
-  currentDeck = deck_data;
-  backTarget = fromSection || 'screen-section-exam';
-  showScreen('screen-loading');
-  const saved = await loadStarWords(deck_data.id);
-  const masteredWords = await loadMastered(deck_data.id);
-  const masteredSet = new Set((masteredWords || []).map(w => w.w));
-  const filtered = (saved || []).filter(w => !masteredSet.has(w.w));
-  if (!filtered.length) { showScreen('screen-no-star'); return; }
+// extraKeys — слова, отложенные в текущей сессии: их запись в облако могла ещё не завершиться.
+async function beginRound2(deck_data, extraKeys) {
+  const state = await loadDeckState(deck_data.id);
+  const masteredSet = new Set(state.mastered);
+  const byKey = new Map(deck_data.words.map(w => [w.w, w]));
+  const keys = [...new Set([...state.star, ...(extraKeys || [])])].filter(k => !masteredSet.has(k));
+  const words = keys.map(k => byKey.get(k)).filter(Boolean);
+  if (!words.length) { showScreen('screen-no-star'); return; }
   round = 2;
-  activeSlots = shuffle([...filtered]);
+  activeSlots = shuffle(words);
   again = []; mastered = [];
   idx = 0; flipped = false; doneInRound = 0;
   totalUnique = activeSlots.length;
@@ -1088,23 +1190,16 @@ async function startRound2FromSection(deck_data, fromSection) {
   showCard();
 }
 
+async function startRound2FromSection(deck_data, fromSection) {
+  currentDeck = deck_data;
+  backTarget = fromSection || 'screen-section-exam';
+  showScreen('screen-loading');
+  await beginRound2(deck_data, []);
+}
+
 async function startRound2FromSession() {
-  const saved = await loadStarWords(currentDeck.id) || [];
-  const masteredWords = await loadMastered(currentDeck.id) || [];
-  const masteredSet = new Set(masteredWords.map(w => w.w));
-  const map = {};
-  [...saved, ...starWords].forEach(w => map[w.w] = w);
-  const all = Object.values(map).filter(w => !masteredSet.has(w.w));
-  if (!all.length) { showScreen('screen-no-star'); return; }
-  round = 2;
-  activeSlots = shuffle(all);
-  again = []; mastered = [];
-  idx = 0; flipped = false; doneInRound = 0;
-  totalUnique = activeSlots.length;
-  document.getElementById('roundBadge').textContent = 'рус → греч';
-  document.getElementById('btn-star').textContent = '★ Выучено';
-  showScreen('screen-cards');
-  showCard();
+  showScreen('screen-loading');
+  await beginRound2(currentDeck, starWords.map(w => w.w));
 }
 
 async function startAllWordsSession(startRound) {
@@ -1162,8 +1257,8 @@ function answer(type) {
   else if (type === 'ok') { doneInRound++; }
   else if (type === 'star') {
     doneInRound++;
-    if (round === 1) { starWords.push(c); saveStarWords(currentDeck.id, [c]); }
-    else { mastered.push(c); saveMastered(currentDeck.id, [c]); }
+    if (round === 1) { starWords.push(c); saveStarWords(currentDeck.id, [c.w]); }
+    else { mastered.push(c); saveMastered(currentDeck.id, [c.w]); }
   }
   if (tg) tg.HapticFeedback.impactOccurred('medium');
   idx++;
@@ -1989,9 +2084,7 @@ function shuffle(arr) {
 
 // ── ALL MASTERED ──
 async function removeMastered(deckId, word) {
-  const existing = (await loadMastered(deckId)) || [];
-  const updated = existing.filter(w => w.w !== word);
-  csSet('mastered_' + deckId, updated);
+  await csRemoveFromList(masteredKey(deckId), word);
   showAllMastered();
 }
 
@@ -2003,9 +2096,11 @@ async function showAllMastered() {
   const count = document.getElementById('all-mastered-count');
   list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:20px 0;text-align:center;">Загрузка...</div>';
 
-  const results = await Promise.all(allDecks.map(async d => ({
-    deck: d, words: (await loadMastered(d.id)) || []
-  })));
+  const results = await Promise.all(allDecks.map(async d => {
+    const byKey = new Map(d.words.map(w => [w.w, w]));
+    const keys = await loadMastered(d.id);
+    return { deck: d, words: keys.map(k => byKey.get(k)).filter(Boolean) };
+  }));
 
   const total = results.reduce((s, r) => s + r.words.length, 0);
   list.innerHTML = '';
