@@ -1285,7 +1285,9 @@ function endRound() {
 }
 
 // ── ФАКТЫ ──
-function startFactSession(factDeck) {
+// Механика та же, что у слов: выученное сохраняется и больше не показывается,
+// а рабочий набор живёт между сессиями. Ключ факта — имя.
+async function startFactSession(factDeck) {
   currentFactDeck = factDeck;
   backTarget = 'screen-section-exam';
 
@@ -1293,9 +1295,29 @@ function startFactSession(factDeck) {
     goBack();
     return;
   }
+  showScreen('screen-loading');
+
+  const state = await loadDeckState(factDeck.id);
+  const byKey = new Map(factDeck.facts.map(f => [f.name, f]));
+  const excludeSet = new Set(state.mastered);
+
+  let activeKeys = state.active.filter(k => byKey.has(k) && !excludeSet.has(k));
+  if (activeKeys.length < ROUND_SIZE) {
+    const activeSet = new Set(activeKeys);
+    const pool = factDeck.facts.filter(f => !excludeSet.has(f.name) && !activeSet.has(f.name));
+    const need = Math.min(ROUND_SIZE - activeKeys.length, pool.length);
+    activeKeys = [...activeKeys, ...shuffle(pool).slice(0, need).map(f => f.name)];
+  }
+  if (state.ok) saveActiveRound1(factDeck.id, activeKeys);
+
+  if (!activeKeys.length) {
+    document.getElementById('fact-done-sub').textContent = 'Все факты отмечены как выученные';
+    showScreen('screen-fact-done');
+    return;
+  }
 
   // Каждая карточка получает случайную сторону для показа
-  factSlots = shuffle([...factDeck.facts]).map(f => ({
+  factSlots = shuffle(activeKeys.map(k => byKey.get(k))).map(f => ({
     ...f,
     showName: Math.random() < 0.5  // true = лицо: имя, false = лицо: должность
   }));
@@ -1367,7 +1389,7 @@ function factAnswer(type) {
   } else if (type === 'mastered') {
     factDoneCount++;
     factMastered.push(c);
-    saveMastered(currentFactDeck.id, [{w: c.name, t: c.role_ru}]);
+    saveMastered(currentFactDeck.id, [c.name]);
   }
   if (tg) tg.HapticFeedback.impactOccurred('medium');
   factIdx++;
@@ -2091,15 +2113,22 @@ async function removeMastered(deckId, word) {
 async function showAllMastered() {
   backTarget = document.querySelector('.screen.active')?.id || 'screen-main';
   showScreen('screen-all-mastered');
-  const allDecks = [...DECKS, ...ALL_TOPIC_DECKS];
+  // Факты тоже попадают в список — иначе выученный факт нечем вернуть в колоду.
+  const allDecks = [
+    ...[...DECKS, ...ALL_TOPIC_DECKS].map(d => ({
+      id: d.id, name: d.name, byKey: new Map(d.words.map(w => [w.w, w]))
+    })),
+    ...FACT_DECKS.map(d => ({
+      id: d.id, name: d.name, byKey: new Map(d.facts.map(f => [f.name, { w: f.name, t: f.role_ru }]))
+    }))
+  ];
   const list = document.getElementById('all-mastered-list');
   const count = document.getElementById('all-mastered-count');
   list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:20px 0;text-align:center;">Загрузка...</div>';
 
   const results = await Promise.all(allDecks.map(async d => {
-    const byKey = new Map(d.words.map(w => [w.w, w]));
     const keys = await loadMastered(d.id);
-    return { deck: d, words: keys.map(k => byKey.get(k)).filter(Boolean) };
+    return { deck: d, words: keys.map(k => d.byKey.get(k)).filter(Boolean) };
   }));
 
   const total = results.reduce((s, r) => s + r.words.length, 0);
