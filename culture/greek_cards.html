@@ -225,12 +225,6 @@
     font-size: 32px; font-weight: 800; color: var(--text);
     word-break: break-word; line-height: 1.2; text-align: center;
   }
-  .tap-hint {
-    font-size: 11px; color: var(--muted);
-    font-style: italic; font-weight: 400; text-align: center;
-    transition: opacity 0.3s;
-  }
-  .tap-hint.hidden { opacity: 0; }
   .card-face.back {
     background: #F5F5F5;
     box-shadow: 0 2px 16px rgba(0,0,0,0.07);
@@ -292,19 +286,33 @@
 
   /* ══ ALL MASTERED ══ */
   .mastered-list-wrap { display: flex; flex-direction: column; overflow-y: auto; flex: 1; }
+  .mastered-section-header {
+    font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); padding: 14px 0 6px;
+    overflow: hidden; transition: opacity 0.25s ease, height 0.25s ease, padding 0.25s ease;
+  }
   .mastered-row {
     padding: 0.65rem 0; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; gap: 0.5rem;
+    overflow: hidden;
+    transition: opacity 0.25s ease, height 0.25s ease, padding 0.25s ease, margin 0.25s ease, border-color 0.25s ease;
   }
   .mastered-row:last-child { border-bottom: none; }
+  /* Убирающаяся строка/заголовок: схлопывается на месте, страница не прыгает. */
+  .mastered-row.removing,
+  .mastered-section-header.removing {
+    opacity: 0; height: 0 !important; padding-top: 0; padding-bottom: 0;
+    margin: 0; border-color: transparent; pointer-events: none;
+  }
   .mastered-word { font-size: 15px; font-weight: 700; color: var(--text); flex: 1; }
   .mastered-trans { font-size: 13px; color: var(--muted); flex: 1; }
   .mastered-del {
     background: none; border: none; cursor: pointer;
-    font-size: 16px; color: var(--muted); padding: 4px 6px;
-    border-radius: 6px; line-height: 1; flex-shrink: 0; opacity: 0.4;
+    font-size: 18px; color: var(--muted);
+    width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; line-height: 1; flex-shrink: 0;
   }
-  .mastered-del:active { opacity: 1; color: #CC3366; }
+  .mastered-del:active { background: #FFD6E0; color: #CC3366; }
 
   .btn-mastered-link {
     background: none; border: none; cursor: pointer;
@@ -313,6 +321,31 @@
     margin-top: auto;
   }
   .btn-mastered-link:active { opacity: 0.6; }
+
+  /* ══ UNDO TOAST ══ */
+  .toast-undo {
+    position: fixed; left: 50%; bottom: 24px;
+    transform: translate(-50%, 16px);
+    background: #1A1A1A; color: #fff;
+    padding: 12px 10px 12px 18px;
+    border-radius: 14px;
+    display: flex; align-items: center; gap: 14px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 100;
+    max-width: calc(480px - 2rem);
+    width: calc(100% - 2rem);
+  }
+  .toast-undo.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  .toast-undo-text { flex: 1; }
+  .toast-undo-btn {
+    background: var(--lime); color: #111; border: none;
+    padding: 8px 14px; border-radius: 9px;
+    font-size: 13px; font-weight: 800; cursor: pointer; flex-shrink: 0;
+  }
+  .toast-undo-btn:active { opacity: 0.8; }
 
   #screen-cards { padding-top: 0; padding-bottom: 1.5rem; }
   #screen-all-mastered { padding: 0 0 1.5rem; }
@@ -356,7 +389,7 @@
 
     <div class="deck-card">
       <div class="deck-name">Учить слова</div>
-      <div class="deck-meta">История и культура Кипра · 133 слова</div>
+      <div class="deck-meta">История и культура Кипра · <span class="deck-count" data-deck="culture"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(DECKS[0], 1)">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(DECKS[0], 'screen-section-exam')">рус → греч</button>
@@ -365,13 +398,13 @@
 
     <div class="deck-card">
       <div class="deck-name">Должностные лица, даты и пр.</div>
-      <div class="deck-meta">Должностные лица и факты · 28 карточек</div>
+      <div class="deck-meta">Должностные лица и факты · <span class="deck-count" data-deck="facts_culture" data-unit="card"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startFactSession(FACT_DECKS[0])">Учить факты</button>
       </div>
     </div>
 
-    <button class="btn-mastered-link" onclick="showAllMastered()">★ Выученные слова</button>
+    <button class="btn-mastered-link" onclick="openAllMastered()">★ Выученные слова</button>
   </div>
 </div>
 
@@ -385,7 +418,7 @@
 
     <div class="deck-card">
       <div class="deck-name">Все слова</div>
-      <div class="deck-meta">Объединяет все колоды · <span id="all-words-count">133</span> слова</div>
+      <div class="deck-meta">Объединяет все колоды · <span class="deck-count" data-deck="all_words"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startAllWordsSession(1)">греч → рус</button>
         <button class="deck-btn" onclick="startAllWordsSession(2)">рус → греч</button>
@@ -394,7 +427,7 @@
 
     <div class="deck-card">
       <div class="deck-name">Описание внешности</div>
-      <div class="deck-meta">Лицо, волосы, черты · 29 слов</div>
+      <div class="deck-meta">Лицо, волосы, черты · <span class="deck-count" data-deck="appearance"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('appearance'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('appearance'), 'screen-section-topics')">рус → греч</button>
@@ -403,7 +436,7 @@
 
     <div class="deck-card">
       <div class="deck-name">Описание характера</div>
-      <div class="deck-meta">Черты личности · 11 слов</div>
+      <div class="deck-meta">Черты личности · <span class="deck-count" data-deck="character"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('character'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('character'), 'screen-section-topics')">рус → греч</button>
@@ -412,7 +445,7 @@
 
     <div class="deck-card">
       <div class="deck-name">Цвета</div>
-      <div class="deck-meta">4 слова</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="colors"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('colors'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('colors'), 'screen-section-topics')">рус → греч</button>
@@ -420,7 +453,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Правильные глаголы</div>
-      <div class="deck-meta">6 слов</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="verbs_regular"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('verbs_regular'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('verbs_regular'), 'screen-section-topics')">рус → греч</button>
@@ -428,7 +461,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Возвратные глаголы (-ομαι)</div>
-      <div class="deck-meta">2 слова</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="verbs_reflexive"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('verbs_reflexive'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('verbs_reflexive'), 'screen-section-topics')">рус → греч</button>
@@ -436,7 +469,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Неправильные глаголы</div>
-      <div class="deck-meta">6 слов · с формой аориста</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="verbs_irregular"></span> · с формой аориста</div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('verbs_irregular'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('verbs_irregular'), 'screen-section-topics')">рус → греч</button>
@@ -444,7 +477,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Наречия и выражения</div>
-      <div class="deck-meta">5 слов</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="adverbs"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('adverbs'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('adverbs'), 'screen-section-topics')">рус → греч</button>
@@ -452,7 +485,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Животные</div>
-      <div class="deck-meta">2 слова</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="animals"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('animals'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('animals'), 'screen-section-topics')">рус → греч</button>
@@ -460,7 +493,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Развлечения</div>
-      <div class="deck-meta">5 слов</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="entertainment"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('entertainment'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('entertainment'), 'screen-section-topics')">рус → греч</button>
@@ -468,7 +501,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Дом и быт</div>
-      <div class="deck-meta">4 слова</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="home"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('home'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('home'), 'screen-section-topics')">рус → греч</button>
@@ -476,7 +509,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Остальное</div>
-      <div class="deck-meta">9 слов</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="other"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('other'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('other'), 'screen-section-topics')">рус → греч</button>
@@ -485,7 +518,7 @@
 
     <div class="deck-card">
       <div class="deck-name">Семья и отношения</div>
-      <div class="deck-meta">44 слова</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="family"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('family'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('family'), 'screen-section-topics')">рус → греч</button>
@@ -493,7 +526,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Этапы жизни</div>
-      <div class="deck-meta">15 слов</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="life_stages"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('life_stages'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('life_stages'), 'screen-section-topics')">рус → греч</button>
@@ -501,7 +534,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Эмоции и отношения</div>
-      <div class="deck-meta">18 слов</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="emotions"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('emotions'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('emotions'), 'screen-section-topics')">рус → греч</button>
@@ -509,7 +542,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Город и транспорт</div>
-      <div class="deck-meta">38 слов</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="city"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('city'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('city'), 'screen-section-topics')">рус → греч</button>
@@ -517,7 +550,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Путешествия и туризм</div>
-      <div class="deck-meta">33 слова</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="travel"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('travel'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('travel'), 'screen-section-topics')">рус → греч</button>
@@ -525,7 +558,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Одежда и покупки</div>
-      <div class="deck-meta">33 слова</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="shopping"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('shopping'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('shopping'), 'screen-section-topics')">рус → греч</button>
@@ -533,7 +566,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Еда и продукты</div>
-      <div class="deck-meta">48 слов</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="food"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('food'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('food'), 'screen-section-topics')">рус → греч</button>
@@ -541,7 +574,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Образование</div>
-      <div class="deck-meta">41 слово</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="education"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('education'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('education'), 'screen-section-topics')">рус → греч</button>
@@ -549,7 +582,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Работа и карьера</div>
-      <div class="deck-meta">45 слов</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="work"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('work'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('work'), 'screen-section-topics')">рус → греч</button>
@@ -557,7 +590,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Здоровье и медицина</div>
-      <div class="deck-meta">51 слово</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="health"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('health'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('health'), 'screen-section-topics')">рус → греч</button>
@@ -565,7 +598,7 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Экология и природа</div>
-      <div class="deck-meta">33 слова</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="ecology"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('ecology'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('ecology'), 'screen-section-topics')">рус → греч</button>
@@ -573,14 +606,14 @@
     </div>
     <div class="deck-card">
       <div class="deck-name">Технологии и интернет</div>
-      <div class="deck-meta">34 слова</div>
+      <div class="deck-meta"><span class="deck-count" data-deck="technology"></span></div>
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('technology'), 1, 'screen-section-topics')">греч → рус</button>
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('technology'), 'screen-section-topics')">рус → греч</button>
       </div>
     </div>
 
-    <button class="btn-mastered-link" onclick="showAllMastered()">★ Выученные слова</button>
+    <button class="btn-mastered-link" onclick="openAllMastered()">★ Выученные слова</button>
   </div>
 </div>
 
@@ -708,6 +741,12 @@
     <div class="counter" id="all-mastered-count"></div>
   </div>
   <div class="mastered-list-wrap" id="all-mastered-list"></div>
+</div>
+
+<!-- ══ UNDO TOAST ══ -->
+<div class="toast-undo" id="toast-undo">
+  <div class="toast-undo-text" id="toast-undo-text">Слово удалено</div>
+  <button class="toast-undo-btn" id="toast-undo-btn">Отменить</button>
 </div>
 
 <script>
@@ -981,13 +1020,13 @@ function goBack() {
 let currentDeck = DECKS[0];
 let round = 1;
 let activeSlots = [], again = [], starWords = [], mastered = [];
-let idx = 0, flipped = false, hasFlippedOnce = false;
+let idx = 0, flipped = false;
 let doneInRound = 0, totalUnique = 0;
 
 // ── STATE: ФАКТЫ ──
 let currentFactDeck = FACT_DECKS[0];
 let factSlots = [], factAgain = [];
-let factIdx = 0, factFlipped = false, factHasFlipped = false;
+let factIdx = 0, factFlipped = false;
 let factDoneCount = 0, factTotal = 0;
 let factMastered = [];
 
@@ -1165,6 +1204,15 @@ async function startSession(deck_data, startRound, fromSection) {
   idx = 0; flipped = false; doneInRound = 0;
   totalUnique = activeSlots.length;
 
+  // Все слова колоды либо отложены в раунд 2, либо выучены — раньше это молча
+  // открывало пустое "Колода окончена" без объяснения, что вообще произошло.
+  if (!activeSlots.length) {
+    document.getElementById('round1-sub').textContent = 'Все слова этой колоды выучены или отложены в рус → греч';
+    document.getElementById('btn-start-round2').style.display = 'none';
+    showScreen('screen-round1-end');
+    return;
+  }
+
   document.getElementById('roundBadge').textContent = 'греч → рус';
   document.getElementById('btn-star').textContent = '★ Отложить в рус → греч';
   showScreen('screen-cards');
@@ -1227,7 +1275,7 @@ function showCard() {
   document.getElementById('wordEl').textContent = front;
   cardInner.style.transition = 'none';
   cardInner.classList.remove('flipped');
-  flipped = false; hasFlippedOnce = false;
+  flipped = false;
   requestAnimationFrame(() => { cardInner.style.transition = ''; });
   updateProgress();
 
@@ -1246,9 +1294,6 @@ function handleCardClick() {
   const ci = document.getElementById('cardInner');
   flipped = !flipped;
   ci.classList.toggle('flipped', flipped);
-  if (flipped && !hasFlippedOnce) {
-    hasFlippedOnce = true;
-  }
 }
 
 function answer(type) {
@@ -1269,7 +1314,9 @@ function answer(type) {
 function updateProgress() {
   const pct = Math.round((doneInRound / totalUnique) * 100);
   document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('counter').textContent = Math.min(idx, totalUnique) + ' / ' + totalUnique;
+  // Счётчик считает завершённые карточки (как и полоса), а не показанные —
+  // иначе после "Ещё раз" он упирался в максимум, пока сзади ждали повторы.
+  document.getElementById('counter').textContent = doneInRound + ' / ' + totalUnique;
 }
 
 function endRound() {
@@ -1279,7 +1326,8 @@ function endRound() {
     document.getElementById('btn-start-round2').style.display = starWords.length > 0 ? 'block' : 'none';
     showScreen('screen-round1-end');
   } else {
-    document.getElementById('done-sub').textContent = '';
+    document.getElementById('done-sub').textContent =
+      mastered.length > 0 ? `Выучено: ${mastered.length} сл.` : 'В этот раз ничего не отмечено как выучено';
     showScreen('screen-done');
   }
 }
@@ -1323,7 +1371,7 @@ async function startFactSession(factDeck) {
   }));
   factAgain = [];
   factMastered = [];
-  factIdx = 0; factFlipped = false; factHasFlipped = false;
+  factIdx = 0; factFlipped = false;
   factDoneCount = 0; factTotal = factSlots.length;
 
   showScreen('screen-facts');
@@ -1331,10 +1379,11 @@ async function startFactSession(factDeck) {
 }
 
 function showFactCard() {
+  // Повторы дописываются в конец очереди (как и в словах), а не заменяют её —
+  // иначе factIdx обнулялся и счётчик "проехал" назад после "Ещё раз".
   if (factIdx >= factSlots.length && factAgain.length > 0) {
-    factSlots = [...factAgain];
+    factSlots = [...factSlots, ...factAgain];
     factAgain = [];
-    factIdx = 0;
   }
   if (factIdx >= factSlots.length) {
     document.getElementById('fact-done-sub').textContent =
@@ -1366,7 +1415,7 @@ function showFactCard() {
 
   ci.style.transition = 'none';
   ci.classList.remove('flipped');
-  factFlipped = false; factHasFlipped = false;
+  factFlipped = false;
   requestAnimationFrame(() => { ci.style.transition = ''; });
   updateFactProgress();
 }
@@ -1375,9 +1424,6 @@ function handleFactCardClick() {
   const ci = document.getElementById('factCardInner');
   factFlipped = !factFlipped;
   ci.classList.toggle('flipped', factFlipped);
-  if (factFlipped && !factHasFlipped) {
-    factHasFlipped = true;
-  }
 }
 
 function factAnswer(type) {
@@ -1405,7 +1451,7 @@ function factAnswer(type) {
 function updateFactProgress() {
   const pct = Math.round((factDoneCount / factTotal) * 100);
   document.getElementById('factProgressFill').style.width = pct + '%';
-  document.getElementById('fact-counter').textContent = Math.min(factIdx, factTotal) + ' / ' + factTotal;
+  document.getElementById('fact-counter').textContent = factDoneCount + ' / ' + factTotal;
 }
 
 // ── ТЕМАТИЧЕСКИЕ КОЛОДЫ ──
@@ -2105,65 +2151,234 @@ function shuffle(arr) {
 }
 
 // ── ALL MASTERED ──
-async function removeMastered(deckId, word) {
-  await csRemoveFromList(masteredKey(deckId), word);
-  showAllMastered();
-}
+// Удаление работает на живом DOM (без перезагрузки списка), поэтому прокрутка
+// не сбрасывается и не мелькает "Загрузка..." — было именно так и раздражало.
+let masteredUndo = null;      // { deck, word } — что показать/вернуть по "Отменить"
+let masteredUndoTimer = null;
 
-async function showAllMastered() {
-  backTarget = document.querySelector('.screen.active')?.id || 'screen-main';
-  showScreen('screen-all-mastered');
-  // Факты тоже попадают в список — иначе выученный факт нечем вернуть в колоду.
-  const allDecks = [
-    ...[...DECKS, ...ALL_TOPIC_DECKS].map(d => ({
-      id: d.id, name: d.name, byKey: new Map(d.words.map(w => [w.w, w]))
-    })),
+// "Все слова" ведёт учёт отдельно от тематических колод (так и задумано), но
+// то, что в ней выучено, всё равно должно быть видно и удаляемо здесь.
+function allMasteredDeckDefs() {
+  const wordDecks = [...DECKS, ...ALL_TOPIC_DECKS];
+  const allWordsByKey = new Map(wordDecks.flatMap(d => d.words).map(w => [w.w, w]));
+  return [
+    ...wordDecks.map(d => ({ id: d.id, name: d.name, byKey: new Map(d.words.map(w => [w.w, w])) })),
+    { id: 'all_words', name: 'Все слова', byKey: allWordsByKey },
     ...FACT_DECKS.map(d => ({
       id: d.id, name: d.name, byKey: new Map(d.facts.map(f => [f.name, { w: f.name, t: f.role_ru }]))
     }))
   ];
+}
+
+async function openAllMastered() {
+  // backTarget выставляется только здесь, а не при каждой перерисовке —
+  // иначе после удаления слова "Назад" начинал вести на сам этот экран.
+  backTarget = document.querySelector('.screen.active')?.id || 'screen-main';
+  showScreen('screen-all-mastered');
+  await renderAllMastered();
+}
+
+async function renderAllMastered() {
+  hideUndoToast();
   const list = document.getElementById('all-mastered-list');
-  const count = document.getElementById('all-mastered-count');
   list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:20px 0;text-align:center;">Загрузка...</div>';
 
-  const results = await Promise.all(allDecks.map(async d => {
+  const defs = allMasteredDeckDefs();
+  const results = await Promise.all(defs.map(async d => {
     const keys = await loadMastered(d.id);
     return { deck: d, words: keys.map(k => d.byKey.get(k)).filter(Boolean) };
   }));
 
-  const total = results.reduce((s, r) => s + r.words.length, 0);
   list.innerHTML = '';
+  const total = results.reduce((s, r) => s + r.words.length, 0);
+  if (total === 0) { renderMasteredEmptyState(); return; }
 
-  if (total === 0) {
-    count.textContent = '';
-    list.innerHTML = `<div style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;flex-direction:column;gap:0.5rem;padding:2rem;">
-      <div style="font-size:40px;">🏺</div>
-      <div style="font-size:16px;font-weight:700;color:var(--text);">Пока ничего нет</div>
-      <div style="font-size:13px;color:var(--muted);line-height:1.6;">Пройди раунды и отметь<br>слова ★ Выучено</div>
-    </div>`;
+  results.forEach(({ deck, words }) => {
+    if (!words.length) return;
+    list.appendChild(buildMasteredHeader(deck));
+    words.forEach(w => list.appendChild(buildMasteredRow(deck, w)));
+  });
+  updateMasteredCountLabel();
+}
+
+function renderMasteredEmptyState() {
+  document.getElementById('all-mastered-count').textContent = '';
+  document.getElementById('all-mastered-list').innerHTML = `<div data-mastered-empty style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;flex-direction:column;gap:0.5rem;padding:2rem;">
+    <div style="font-size:40px;">🏺</div>
+    <div style="font-size:16px;font-weight:700;color:var(--text);">Пока ничего нет</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6;">Пройди раунды и отметь<br>слова ★ Выучено</div>
+  </div>`;
+}
+
+function updateMasteredCountLabel() {
+  const rows = document.querySelectorAll('#all-mastered-list .mastered-row').length;
+  document.getElementById('all-mastered-count').textContent = rows ? rows + ' сл.' : '';
+}
+
+function buildMasteredHeader(deck) {
+  const header = document.createElement('div');
+  header.className = 'mastered-section-header';
+  header.dataset.deckId = deck.id;
+  header.textContent = deck.name;
+  return header;
+}
+
+// Ключи и подписи собираются через textContent/dataset, а не в HTML-строку —
+// апостроф или кавычка в слове раньше могли сломать кнопку ×.
+function buildMasteredRow(deck, word) {
+  const row = document.createElement('div');
+  row.className = 'mastered-row';
+  row.dataset.deckId = deck.id;
+  row.dataset.key = word.w;
+
+  const wEl = document.createElement('span');
+  wEl.className = 'mastered-word'; wEl.textContent = word.w;
+  const tEl = document.createElement('span');
+  tEl.className = 'mastered-trans'; tEl.textContent = word.t;
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'mastered-del';
+  del.textContent = '×';
+  del.setAttribute('aria-label', `Удалить «${word.w}» из выученных`);
+  del.addEventListener('click', () => deleteMasteredWord(deck, word, row));
+
+  row.append(wEl, tEl, del);
+  return row;
+}
+
+function deleteMasteredWord(deck, word, row) {
+  csRemoveFromList(masteredKey(deck.id), word.w); // фон: не ждём ответа облака, удаление ощущается мгновенным
+
+  const list = document.getElementById('all-mastered-list');
+  const escId = (window.CSS?.escape ? CSS.escape(deck.id) : deck.id);
+  const header = list.querySelector(`.mastered-section-header[data-deck-id="${escId}"]`);
+  const siblingRows = list.querySelectorAll(`.mastered-row[data-deck-id="${escId}"]`);
+  const isLastInSection = siblingRows.length <= 1;
+  const headerToCollapse = isLastInSection ? header : null;
+
+  collapseAndRemove(row);
+  if (headerToCollapse) collapseAndRemove(headerToCollapse);
+
+  const remaining = document.querySelectorAll('#all-mastered-list .mastered-row').length - 1;
+  document.getElementById('all-mastered-count').textContent = remaining ? remaining + ' сл.' : '';
+  if (remaining === 0) {
+    setTimeout(() => {
+      if (!document.querySelectorAll('#all-mastered-list .mastered-row').length) renderMasteredEmptyState();
+    }, 300);
+  }
+
+  showUndoToast(deck, word, row, headerToCollapse);
+}
+
+// Схлопывает высоту с анимацией и убирает узел из DOM только по её завершении —
+// список не перестраивается, поэтому scrollTop страницы не трогается.
+function collapseAndRemove(el) {
+  if (!el) return;
+  el.style.height = el.getBoundingClientRect().height + 'px';
+  el._collapseRaf = requestAnimationFrame(() => {
+    el._collapseRaf = requestAnimationFrame(() => {
+      el._collapseRaf = null;
+      if (el.isConnected) el.classList.add('removing');
+    });
+  });
+  el.addEventListener('transitionend', () => {
+    if (el.classList.contains('removing')) el.remove();
+  }, { once: true });
+}
+
+// Отменяет ещё не завершившееся схлопывание на месте — без него быстрый клик
+// "Отменить" (до конца анимации) создавал вторую, только что вставленную строку
+// поверх старой, которая всё ещё дотаивала на экране. Отменённый кадр анимации
+// нужно снять явно — иначе он срабатывает позже и запускает исчезновение заново.
+function cancelCollapse(el) {
+  if (!el || !el.isConnected) return false;
+  if (el._collapseRaf) { cancelAnimationFrame(el._collapseRaf); el._collapseRaf = null; }
+  el.classList.remove('removing');
+  el.style.height = '';
+  return true;
+}
+
+function showUndoToast(deck, word, row, header) {
+  clearTimeout(masteredUndoTimer);
+  masteredUndo = { deck, word, row, header };
+  document.getElementById('toast-undo-text').textContent = `«${word.w}» удалено`;
+  document.getElementById('toast-undo').classList.add('show');
+  masteredUndoTimer = setTimeout(hideUndoToast, 5000);
+}
+
+function hideUndoToast() {
+  clearTimeout(masteredUndoTimer);
+  document.getElementById('toast-undo')?.classList.remove('show');
+  masteredUndo = null;
+}
+
+async function undoMasteredDelete() {
+  if (!masteredUndo) return;
+  const { deck, word, row, header } = masteredUndo;
+  hideUndoToast();
+  // Дожидаемся записи в хранилище: если строка уже реально исчезла (см. ниже),
+  // восстановление читает список заново — не должно попасть на данные без этого слова.
+  await csAddToList(masteredKey(deck.id), [word.w]);
+
+  if (header) cancelCollapse(header);
+  const rowRestored = cancelCollapse(row);
+  if (rowRestored) {
+    updateMasteredCountLabel();
+  } else {
+    await restoreMasteredWord(deck, word); // строка уже физически исчезла — вставляем новую
+  }
+}
+
+async function restoreMasteredWord(deck, word) {
+  const list = document.getElementById('all-mastered-list');
+  if (list.querySelector('[data-mastered-empty]') || !list.children.length) {
+    await renderAllMastered();
     return;
   }
 
-  count.textContent = total + ' сл.';
-  results.forEach(({ deck, words }) => {
-    if (!words.length) return;
-    const header = document.createElement('div');
-    header.style.cssText = 'font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:14px 0 6px;';
-    header.textContent = deck.name;
-    list.appendChild(header);
-    words.forEach(c => {
-      const row = document.createElement('div');
-      row.className = 'mastered-row';
-      const wordEsc = c.w.replace(/'/g, "\'");
-      row.innerHTML = `<span class="mastered-word">${c.w}</span><span class="mastered-trans">${c.t}</span><button class="mastered-del" onclick="removeMastered('${deck.id}', '${wordEsc}')">×</button>`;
-      list.appendChild(row);
-    });
-  });
+  const escId = (window.CSS?.escape ? CSS.escape(deck.id) : deck.id);
+  let header = list.querySelector(`.mastered-section-header[data-deck-id="${escId}"]`);
+  const siblingRows = list.querySelectorAll(`.mastered-row[data-deck-id="${escId}"]`);
+  const anchor = siblingRows.length ? siblingRows[siblingRows.length - 1] : header;
+
+  if (!header) {
+    header = buildMasteredHeader(deck);
+    list.appendChild(header); // раздела больше не было в списке — добавляем в конец
+  }
+  const row = buildMasteredRow(deck, word);
+  if (anchor?.nextSibling) list.insertBefore(row, anchor.nextSibling);
+  else list.appendChild(row);
+
+  updateMasteredCountLabel();
 }
 
-// Обновляем счётчик "Все слова"
-document.getElementById('all-words-count').textContent =
-  [...DECKS, ...ALL_TOPIC_DECKS].reduce((s, d) => s + d.words.length, 0);
+document.getElementById('toast-undo-btn').addEventListener('click', undoMasteredDelete);
+
+// ── ЧИСЛА КАРТОЧЕК В КОЛОДАХ ──
+// Раньше были вписаны в разметку руками и разошлись с реальным размером
+// колод у полудюжины из них. Теперь подпись всегда берётся из данных.
+function pluralRu(n, forms) {
+  const n100 = n % 100, n10 = n % 10;
+  if (n10 === 1 && n100 !== 11) return forms[0];
+  if (n10 >= 2 && n10 <= 4 && !(n100 >= 12 && n100 <= 14)) return forms[1];
+  return forms[2];
+}
+const COUNT_UNITS = {
+  word: ['слово', 'слова', 'слов'],
+  card: ['карточка', 'карточки', 'карточек']
+};
+function deckWordCount(id) {
+  if (id === 'all_words') return [...DECKS, ...ALL_TOPIC_DECKS].reduce((s, d) => s + d.words.length, 0);
+  return ([...DECKS, ...ALL_TOPIC_DECKS].find(d => d.id === id)?.words.length) || 0;
+}
+function deckCardCount(id) {
+  return (FACT_DECKS.find(d => d.id === id)?.facts.length) || 0;
+}
+document.querySelectorAll('.deck-count[data-deck]').forEach(span => {
+  const isCard = span.dataset.unit === 'card';
+  const n = isCard ? deckCardCount(span.dataset.deck) : deckWordCount(span.dataset.deck);
+  span.textContent = n + ' ' + pluralRu(n, COUNT_UNITS[isCard ? 'card' : 'word']);
+});
 </script>
 </body>
 </html>
