@@ -120,6 +120,12 @@
     align-items: center;
     gap: 12px;
     margin-bottom: 20px;
+    /* sticky, не fixed: в вебвью Telegram fixed-элементы иногда не держатся
+       на месте при скролле (или вовсе не отрисовываются) — sticky работает
+       в потоке страницы и надёжнее. */
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg);
+    padding: 4px 0;
   }
   .page-back {
     font-size: 12px; font-weight: 700;
@@ -167,6 +173,9 @@
     display: flex; align-items: center;
     justify-content: space-between;
     padding: 20px 0 12px;
+    /* см. .page-top-bar — sticky вместо fixed по той же причине */
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg);
   }
   .back-btn {
     font-size: 12px; font-weight: 700;
@@ -314,20 +323,19 @@
   }
   .mastered-del:active { background: #FFD6E0; color: #CC3366; }
 
-  /* Закреплённая ссылка "Выученные слова": не всплывающая плашка, а тихий
-     докед внизу экрана — виден без прокрутки до конца списка колод, но
-     не спорит с ним по весу (белая таблетка, приглушённый текст). */
+  /* Закреплённая ссылка "Выученные слова": sticky и лежит в потоке списка
+     (не fixed — см. .top-bar), поэтому у каждого экрана свой экземпляр.
+     margin-top:auto держит её у низа экрана, даже если колод мало и список
+     короче окна — тогда sticky ещё не нужен, просто прижата вниз. */
   .mastered-link-dock {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    display: none; justify-content: center;
-    padding: 22px 1rem calc(env(safe-area-inset-bottom, 0px) + 14px);
+    position: sticky; bottom: 0;
+    margin-top: auto;
+    display: flex; justify-content: center;
+    padding: 22px 0 calc(env(safe-area-inset-bottom, 0px) + 14px);
     background: linear-gradient(to top, var(--bg) 60%, transparent);
-    pointer-events: none;
-    z-index: 40;
+    z-index: 5;
   }
-  .mastered-link-dock.show { display: flex; }
   .btn-mastered-link {
-    pointer-events: auto;
     width: 100%; max-width: calc(480px - 2rem);
     background: var(--surface); border: none; border-radius: 14px;
     box-shadow: 0 2px 14px rgba(0,0,0,0.08);
@@ -337,26 +345,27 @@
   }
   .btn-mastered-link:active { opacity: 0.7; }
 
-  #screen-section-exam .page-wrap,
-  #screen-section-topics .page-wrap { padding-bottom: 100px; }
-
   /* ══ UNDO TOAST ══ */
+  /* sticky, не fixed (см. .top-bar) — лежит в потоке экрана "Выученные",
+     поэтому скрытое состояние анимируется через max-height/padding, а не
+     через translate: display:none у sticky-элемента не нужен, а места
+     он в скрытом виде не занимает. */
   .toast-undo {
-    position: fixed; left: 50%; bottom: 24px;
-    transform: translate(-50%, 16px);
+    position: sticky; bottom: 0;
     background: #1A1A1A; color: #fff;
-    padding: 12px 10px 12px 18px;
     border-radius: 14px;
     display: flex; align-items: center; gap: 14px;
     font-size: 14px; font-weight: 600;
     box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    z-index: 100;
-    max-width: calc(480px - 2rem);
-    width: calc(100% - 2rem);
+    max-height: 0; padding: 0 10px 0 18px; margin-bottom: 0;
+    opacity: 0; overflow: hidden; pointer-events: none;
+    transition: max-height 0.2s ease, opacity 0.2s ease, padding 0.2s ease, margin-bottom 0.2s ease;
+    z-index: 20;
   }
-  .toast-undo.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  .toast-undo.show {
+    max-height: 70px; opacity: 1; pointer-events: auto;
+    padding: 12px 10px 12px 18px; margin-bottom: 14px;
+  }
   .toast-undo-text { flex: 1; }
   .toast-undo-btn {
     background: var(--lime); color: #111; border: none;
@@ -420,6 +429,10 @@
       <div class="deck-btns">
         <button class="deck-btn deck-btn-lime" onclick="startFactSession(FACT_DECKS[0])">Учить факты</button>
       </div>
+    </div>
+
+    <div class="mastered-link-dock">
+      <button class="btn-mastered-link" onclick="openAllMastered()">★ Выученные слова</button>
     </div>
   </div>
 </div>
@@ -628,6 +641,10 @@
         <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('technology'), 'screen-section-topics')">рус → греч</button>
       </div>
     </div>
+
+    <div class="mastered-link-dock">
+      <button class="btn-mastered-link" onclick="openAllMastered()">★ Выученные слова</button>
+    </div>
   </div>
 </div>
 
@@ -755,17 +772,14 @@
     <div class="counter" id="all-mastered-count"></div>
   </div>
   <div class="mastered-list-wrap" id="all-mastered-list"></div>
-</div>
 
-<!-- ══ UNDO TOAST ══ -->
-<div class="toast-undo" id="toast-undo">
-  <div class="toast-undo-text" id="toast-undo-text">Слово удалено</div>
-  <button class="toast-undo-btn" id="toast-undo-btn">Отменить</button>
-</div>
-
-<!-- ══ ЗАКРЕПЛЁННАЯ ССЫЛКА "ВЫУЧЕННЫЕ" ══ -->
-<div class="mastered-link-dock" id="mastered-link-dock">
-  <button class="btn-mastered-link" onclick="openAllMastered()">★ Выученные слова</button>
+  <!-- ══ UNDO TOAST ══ -->
+  <!-- Внутри экрана и sticky, а не fixed-оверлей поверх всей страницы —
+       по той же причине, что и .top-bar / .mastered-link-dock. -->
+  <div class="toast-undo" id="toast-undo">
+    <div class="toast-undo-text" id="toast-undo-text">Слово удалено</div>
+    <button class="toast-undo-btn" id="toast-undo-btn">Отменить</button>
+  </div>
 </div>
 
 <script>
@@ -1021,13 +1035,9 @@ const FACT_DECKS = [
 // backTarget = экран, куда возвращает кнопка "← Назад" из карточек
 let backTarget = 'screen-section-exam';
 
-const SCREENS_WITH_MASTERED_DOCK = new Set(['screen-section-exam', 'screen-section-topics']);
-
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  // Закреплённая ссылка "Выученные" видна только там, где под ней длинный список колод.
-  document.getElementById('mastered-link-dock')?.classList.toggle('show', SCREENS_WITH_MASTERED_DOCK.has(id));
 }
 
 function showSection(name) {
