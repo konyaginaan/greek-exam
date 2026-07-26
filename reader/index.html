@@ -27,27 +27,33 @@
     margin: 0 auto;
   }
 
+  .screen { display: none; flex-direction: column; }
+  .screen.active { display: flex; }
+
   .top-bar {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
     padding: 20px 0 16px;
   }
-  .title { font-size: 20px; font-weight: 800; }
+  .title { font-size: 20px; font-weight: 800; flex-shrink: 0; }
   .title em {
     font-style: normal; background: var(--lime);
     padding: 1px 6px; border-radius: 6px;
   }
+  .top-bar-links { display: flex; align-items: center; gap: 14px; }
   .btn-link {
     background: none; border: none; cursor: pointer;
     font-size: 12px; font-weight: 700; color: var(--muted);
     text-transform: uppercase; letter-spacing: 0.06em;
+    white-space: nowrap;
   }
   .btn-link:active { opacity: 0.6; }
 
-  /* ── ВВОД ТЕКСТА ── */
-  #view-input { display: flex; flex-direction: column; gap: 12px; padding-bottom: 32px; }
-  .hint { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  /* ── ВВОД ── */
+  #view-input { flex-direction: column; gap: 20px; padding-bottom: 32px; }
+  .input-block { display: flex; flex-direction: column; gap: 10px; }
+  .input-block-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
   textarea {
-    width: 100%; min-height: 220px;
+    width: 100%; min-height: 180px;
     background: var(--surface); border: none; border-radius: 16px;
     box-shadow: 0 2px 14px rgba(0,0,0,0.07);
     padding: 1rem; font-size: 17px; line-height: 1.5;
@@ -63,8 +69,36 @@
   }
   .btn-primary:active { opacity: 0.85; }
 
-  /* ── ЧТЕНИЕ ── */
-  #view-reader { display: none; flex-direction: column; padding-bottom: 140px; }
+  .file-drop {
+    background: var(--surface); border: 2px dashed var(--border); border-radius: 16px;
+    padding: 2rem 1rem; text-align: center; cursor: pointer;
+  }
+  .file-drop:active { opacity: 0.8; }
+  .file-drop-icon { font-size: 32px; margin-bottom: 8px; }
+  .file-drop-text { font-size: 14px; color: var(--muted); }
+  #pdfFileInput { display: none; }
+
+  .resume-card {
+    background: var(--surface); border-radius: 16px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.07);
+    padding: 1.1rem 1.25rem; display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+  }
+  .resume-card:active { opacity: 0.85; }
+  .resume-icon { font-size: 28px; flex-shrink: 0; }
+  .resume-text { flex: 1; min-width: 0; }
+  .resume-name { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .resume-sub { font-size: 12px; color: var(--muted); }
+  .resume-arrow { font-size: 18px; color: var(--muted); }
+
+  .divider-or {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── ЧТЕНИЕ: ТЕКСТ ── */
+  #view-reader { flex-direction: column; padding-bottom: 60px; }
   .reader-card {
     background: var(--surface); border-radius: 18px;
     box-shadow: 0 2px 14px rgba(0,0,0,0.07);
@@ -76,8 +110,28 @@
     padding: 1px 2px; margin: -1px -2px;
     transition: background 0.12s;
   }
-  .w:active { background: var(--lime); }
-  .w.active { background: var(--lime); }
+  .w:active, .w.active { background: var(--lime); }
+
+  /* ── ЧТЕНИЕ: PDF ── */
+  #pdfContainer { display: flex; flex-direction: column; padding-bottom: 60px; }
+  .pdf-page { position: relative; margin: 0 auto 14px; background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; }
+  .pdf-page canvas { display: block; width: 100%; height: 100%; }
+  .pdf-page-loading {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 13px;
+  }
+  /* Официальные правила pdf.js для текстового слоя — без них слой либо
+     виден поверх картинки, либо не совпадает по размеру с глифами. */
+  .textLayer {
+    position: absolute; inset: 0; overflow: hidden;
+    line-height: 1; text-align: initial; forced-color-adjust: none;
+    transform-origin: 0 0; z-index: 1;
+  }
+  .textLayer span, .textLayer br {
+    color: transparent; position: absolute; white-space: pre;
+    cursor: pointer; transform-origin: 0% 0%;
+  }
+  .textLayer ::selection { background: rgba(170,221,0,0.35); }
 
   /* ── ПЕРЕВОД (панель снизу) ── */
   .translate-panel {
@@ -100,32 +154,97 @@
     font-size: 16px; color: var(--muted); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
-  .tp-translation { font-size: 18px; color: var(--text); min-height: 27px; }
+  .tp-translation { font-size: 18px; color: var(--text); min-height: 27px; margin-bottom: 14px; }
   .tp-translation.loading { color: var(--muted); font-style: italic; }
   .tp-translation.error { color: #CC3366; }
+  .tp-save {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    background: var(--bg); color: var(--text);
+  }
+  .tp-save.saved { background: var(--lime-dark); color: #fff; }
+  .tp-save:active { opacity: 0.8; }
 
   .backdrop {
     position: fixed; inset: 0; background: rgba(0,0,0,0.15);
     opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 40;
   }
   .backdrop.show { opacity: 1; pointer-events: auto; }
+
+  /* ── СОХРАНЁННЫЕ СЛОВА ── */
+  #view-saved { padding-bottom: 32px; gap: 14px; }
+  .saved-actions { display: flex; gap: 10px; }
+  .btn-secondary {
+    flex: 1; padding: 12px; border: none; border-radius: 12px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    background: var(--surface); color: var(--text);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .btn-secondary:active { opacity: 0.8; }
+  .saved-list { display: flex; flex-direction: column; }
+  .saved-row {
+    background: var(--surface); border-radius: 12px;
+    padding: 0.8rem 1rem; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .saved-word { font-weight: 700; flex: 1; min-width: 0; word-break: break-word; }
+  .saved-translation { color: var(--muted); font-size: 14px; flex: 1; min-width: 0; word-break: break-word; }
+  .saved-del {
+    background: none; border: none; cursor: pointer;
+    width: 36px; height: 36px; border-radius: 9px;
+    font-size: 17px; color: var(--muted); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .saved-del:active { background: #FFD6E0; color: #CC3366; }
+  .saved-empty { text-align: center; color: var(--muted); font-size: 14px; padding: 3rem 1rem; line-height: 1.6; }
+  .copy-feedback { text-align: center; font-size: 13px; color: var(--lime-dark); font-weight: 700; height: 18px; }
 </style>
 </head>
 <body>
 
 <div class="top-bar">
   <div class="title">Greek <em>Reader</em></div>
-  <button class="btn-link" id="btn-edit" style="display:none;" onclick="showInput()">Другой текст</button>
+  <div class="top-bar-links">
+    <button class="btn-link" id="btn-saved" onclick="openSaved()">Слова (<span id="savedCount">0</span>)</button>
+    <button class="btn-link" id="btn-edit" style="display:none;" onclick="showInput()">Другая книга</button>
+  </div>
 </div>
 
-<div id="view-input">
-  <div class="hint">Вставь греческий текст — потом можно будет тапнуть по любому слову, чтобы увидеть перевод.</div>
-  <textarea id="textInput" placeholder="Επικόλλησε εδώ το κείμενο στα ελληνικά..."></textarea>
-  <button class="btn-primary" id="btn-show" onclick="showReader()">Показать текст</button>
+<div class="screen active" id="view-input">
+  <div id="resumeBlock" style="display:none;"></div>
+
+  <div class="input-block">
+    <div class="input-block-title">Загрузить PDF</div>
+    <div class="file-drop" onclick="document.getElementById('pdfFileInput').click()">
+      <div class="file-drop-icon">📄</div>
+      <div class="file-drop-text">Нажми, чтобы выбрать PDF-файл</div>
+    </div>
+    <input type="file" id="pdfFileInput" accept="application/pdf" onchange="handlePdfFile(this.files[0])">
+  </div>
+
+  <div class="divider-or">или</div>
+
+  <div class="input-block">
+    <div class="input-block-title">Вставить текст</div>
+    <textarea id="textInput" placeholder="Επικόλλησε εδώ το κείμενο στα ελληνικά..."></textarea>
+    <button class="btn-primary" onclick="showTextReader()">Показать текст</button>
+  </div>
 </div>
 
-<div id="view-reader">
+<div class="screen" id="view-reader">
   <div class="reader-card" id="readerCard"></div>
+</div>
+
+<div class="screen" id="view-pdf">
+  <div id="pdfContainer"></div>
+</div>
+
+<div class="screen" id="view-saved">
+  <div class="saved-actions">
+    <button class="btn-secondary" onclick="copySavedWords()">Скопировать список</button>
+  </div>
+  <div class="copy-feedback" id="copyFeedback"></div>
+  <div class="saved-list" id="savedList"></div>
 </div>
 
 <div class="backdrop" id="backdrop" onclick="closePanel()"></div>
@@ -135,51 +254,114 @@
     <button class="tp-close" onclick="closePanel()">×</button>
   </div>
   <div class="tp-translation" id="tpTranslation"></div>
+  <button class="tp-save" id="tpSave" onclick="saveCurrentWord()">★ Сохранить слово</button>
 </div>
 
-<script>
+<script type="module">
+import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.min.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
+
+// ══════════════════════════════════════════════════════════════
+// ХРАНИЛИЩЕ
+// ══════════════════════════════════════════════════════════════
 const STORAGE_TEXT = 'reader_text_v1';
+const STORAGE_LAST_MODE = 'reader_last_mode_v1';
+const STORAGE_SCROLL_PDF = 'reader_pdf_scroll_v1';
 const STORAGE_CACHE = 'reader_translate_cache_v1';
+const STORAGE_SAVED = 'reader_saved_words_v1';
+
+const IDB_NAME = 'greek_reader_db';
+const IDB_STORE = 'files';
+const IDB_KEY = 'currentBook';
+
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbSet(key, value) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
 
 const translateCache = JSON.parse(localStorage.getItem(STORAGE_CACHE) || '{}');
-let requestToken = 0;
+function saveTranslateCache() { localStorage.setItem(STORAGE_CACHE, JSON.stringify(translateCache)); }
 
-function saveCache() {
-  localStorage.setItem(STORAGE_CACHE, JSON.stringify(translateCache));
+let savedWords = JSON.parse(localStorage.getItem(STORAGE_SAVED) || '[]');
+function persistSavedWords() {
+  localStorage.setItem(STORAGE_SAVED, JSON.stringify(savedWords));
+  document.getElementById('savedCount').textContent = savedWords.length;
 }
 
 // Греческие буквы (включая многотональные диакритики) — то, что оборачивается в тап-слово.
 // \p{Script=Greek}, а не диапазон кодов: у греческого знака вопроса ";" и точки-разделителя "·"
 // код лежит в том же unicode-блоке, что и буквы, но Script=Common — они сюда не попадают.
+const GREEK_RE_CHAR = /\p{Script=Greek}/u;
 const GREEK_WORD_RE = /\p{Script=Greek}+/gu;
 
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function renderReader(text) {
-  const escaped = escapeHtml(text);
-  const html = escaped.replace(GREEK_WORD_RE, w =>
-    `<span class="w" data-w="${w}">${w}</span>`
-  );
-  document.getElementById('readerCard').innerHTML = html.replace(/\n/g, '<br>');
-}
+// ══════════════════════════════════════════════════════════════
+// НАВИГАЦИЯ ЭКРАНОВ
+// ══════════════════════════════════════════════════════════════
+let currentMode = null; // 'text' | 'pdf'
 
-function showReader() {
-  const text = document.getElementById('textInput').value.trim();
-  if (!text) return;
-  localStorage.setItem(STORAGE_TEXT, text);
-  renderReader(text);
-  document.getElementById('view-input').style.display = 'none';
-  document.getElementById('view-reader').style.display = 'flex';
-  document.getElementById('btn-edit').style.display = 'block';
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
 }
 
 function showInput() {
   closePanel();
-  document.getElementById('view-reader').style.display = 'none';
-  document.getElementById('view-input').style.display = 'flex';
+  showScreen('view-input');
   document.getElementById('btn-edit').style.display = 'none';
+  renderResumeBlock();
+}
+
+async function openSaved() {
+  closePanel();
+  showScreen('view-saved');
+  document.getElementById('copyFeedback').textContent = '';
+  renderSavedList();
+}
+
+// ══════════════════════════════════════════════════════════════
+// РЕЖИМ: ПРОСТОЙ ТЕКСТ
+// ══════════════════════════════════════════════════════════════
+function renderTextCard(text) {
+  const escaped = escapeHtml(text);
+  const html = escaped.replace(GREEK_WORD_RE, w => `<span class="w" data-w="${w}">${w}</span>`);
+  document.getElementById('readerCard').innerHTML = html.replace(/\n/g, '<br>');
+}
+
+function showTextReader() {
+  const text = document.getElementById('textInput').value.trim();
+  if (!text) return;
+  localStorage.setItem(STORAGE_TEXT, text);
+  localStorage.setItem(STORAGE_LAST_MODE, 'text');
+  currentMode = 'text';
+  renderTextCard(text);
+  showScreen('view-reader');
+  document.getElementById('btn-edit').style.display = 'block';
 }
 
 document.getElementById('readerCard').addEventListener('click', e => {
@@ -190,10 +372,180 @@ document.getElementById('readerCard').addEventListener('click', e => {
   openPanel(el.dataset.w);
 });
 
+// ══════════════════════════════════════════════════════════════
+// РЕЖИМ: PDF
+// ══════════════════════════════════════════════════════════════
+const pdfWordMaps = new WeakMap(); // textLayer div -> {text, nodeStart}
+let scrollSaveTimer = null;
+
+async function handlePdfFile(file) {
+  if (!file) return;
+  const buf = await file.arrayBuffer();
+  await idbSet(IDB_KEY, { name: file.name, data: buf, savedAt: Date.now() });
+  localStorage.setItem(STORAGE_LAST_MODE, 'pdf');
+  localStorage.removeItem(STORAGE_SCROLL_PDF);
+  await openPdfFromStorage();
+}
+
+async function openPdfFromStorage() {
+  const record = await idbGet(IDB_KEY);
+  if (!record) return false;
+  currentMode = 'pdf';
+  localStorage.setItem(STORAGE_LAST_MODE, 'pdf');
+  showScreen('view-pdf');
+  document.getElementById('btn-edit').style.display = 'block';
+  await renderPdf(record.data);
+  return true;
+}
+
+async function renderPdf(arrayBuffer) {
+  const container = document.getElementById('pdfContainer');
+  container.innerHTML = '';
+  const doc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+
+  const targetWidth = Math.min(document.body.clientWidth, 640) - 4;
+  const pageInfos = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const unscaled = page.getViewport({ scale: 1 });
+    const scale = targetWidth / unscaled.width;
+    const viewport = page.getViewport({ scale });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'pdf-page';
+    wrap.style.width = viewport.width + 'px';
+    wrap.style.height = viewport.height + 'px';
+    wrap.innerHTML = '<div class="pdf-page-loading">Страница ' + i + '…</div>';
+    container.appendChild(wrap);
+    pageInfos.push({ page, viewport, wrap, rendered: false });
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const idx = pageInfos.findIndex(p => p.wrap === entry.target);
+      if (idx === -1 || pageInfos[idx].rendered) return;
+      pageInfos[idx].rendered = true;
+      observer.unobserve(entry.target);
+      renderPdfPage(pageInfos[idx]);
+    });
+  }, { rootMargin: '1000px 0px' });
+  pageInfos.forEach(p => observer.observe(p.wrap));
+
+  // Возвращаемся туда, где остановились в прошлый раз.
+  const savedScroll = parseInt(localStorage.getItem(STORAGE_SCROLL_PDF) || '0', 10);
+  if (savedScroll > 0) requestAnimationFrame(() => window.scrollTo(0, savedScroll));
+
+  window.removeEventListener('scroll', onReaderScroll);
+  window.addEventListener('scroll', onReaderScroll);
+}
+
+function onReaderScroll() {
+  if (currentMode !== 'pdf') return;
+  clearTimeout(scrollSaveTimer);
+  scrollSaveTimer = setTimeout(() => {
+    localStorage.setItem(STORAGE_SCROLL_PDF, String(window.scrollY));
+  }, 250);
+}
+
+async function renderPdfPage({ page, viewport, wrap }) {
+  wrap.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  wrap.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  await page.render({ canvasContext: ctx, viewport }).promise;
+
+  const textContent = await page.getTextContent();
+  const textLayerDiv = document.createElement('div');
+  textLayerDiv.className = 'textLayer';
+  wrap.appendChild(textLayerDiv);
+
+  const textLayer = new pdfjsLib.TextLayer({ textContentSource: textContent, container: textLayerDiv, viewport });
+  await textLayer.render();
+
+  // Плоская карта текста слоя: клик может попасть на границу между двумя
+  // соседними <span> внутри одного слова (шрифт в PDF режет текст на
+  // фрагменты по своим правилам кернинга, не по словам) — без этой карты
+  // слово на стыке фрагментов терялось наполовину.
+  const walker = document.createTreeWalker(textLayerDiv, NodeFilter.SHOW_TEXT);
+  let text = '';
+  const nodeStart = new Map();
+  let n;
+  while ((n = walker.nextNode())) {
+    nodeStart.set(n, text.length);
+    text += n.textContent;
+  }
+  pdfWordMaps.set(textLayerDiv, { text, nodeStart });
+}
+
+document.getElementById('pdfContainer').addEventListener('click', e => {
+  const tlayer = e.target.closest('.textLayer');
+  if (!tlayer) return;
+  const map = pdfWordMaps.get(tlayer);
+  if (!map) return;
+  const word = wordAtPoint(e.clientX, e.clientY, map);
+  if (word) openPanel(word);
+});
+
+function wordAtPoint(x, y, map) {
+  let node, offset;
+  if (document.caretPositionFromPoint) {
+    const pos = document.caretPositionFromPoint(x, y);
+    if (!pos) return null;
+    node = pos.offsetNode; offset = pos.offset;
+  } else if (document.caretRangeFromPoint) {
+    const range = document.caretRangeFromPoint(x, y);
+    if (!range) return null;
+    node = range.startContainer; offset = range.startOffset;
+  } else return null;
+
+  if (node.nodeType !== Node.TEXT_NODE) return null;
+  const base = map.nodeStart.get(node);
+  if (base === undefined) return null;
+  const gi = base + offset;
+  const text = map.text;
+  let start = gi, end = gi;
+  while (start > 0 && GREEK_RE_CHAR.test(text[start - 1])) start--;
+  while (end < text.length && GREEK_RE_CHAR.test(text[end])) end++;
+  const word = text.slice(start, end);
+  return word || null;
+}
+
+// ══════════════════════════════════════════════════════════════
+// ЭКРАН ВВОДА: "продолжить книгу"
+// ══════════════════════════════════════════════════════════════
+async function renderResumeBlock() {
+  const block = document.getElementById('resumeBlock');
+  const record = await idbGet(IDB_KEY);
+  if (!record) { block.style.display = 'none'; block.innerHTML = ''; return; }
+  block.style.display = 'block';
+  block.innerHTML = `
+    <div class="resume-card" id="resumeCard">
+      <div class="resume-icon">📖</div>
+      <div class="resume-text">
+        <div class="resume-name"></div>
+        <div class="resume-sub">Продолжить чтение</div>
+      </div>
+      <div class="resume-arrow">›</div>
+    </div>`;
+  block.querySelector('.resume-name').textContent = record.name;
+  block.querySelector('#resumeCard').addEventListener('click', openPdfFromStorage);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ПЕРЕВОД (панель снизу)
+// ══════════════════════════════════════════════════════════════
+let currentWord = null;
+let requestToken = 0;
+
 async function openPanel(word) {
+  currentWord = word;
   document.getElementById('tpWord').textContent = word;
   document.getElementById('backdrop').classList.add('show');
   document.getElementById('panel').classList.add('show');
+  updateSaveButton();
 
   const key = word.toLowerCase();
   const tEl = document.getElementById('tpTranslation');
@@ -216,7 +568,7 @@ async function openPanel(word) {
     const translated = data[0].map(x => x[0]).join('');
     if (myToken !== requestToken) return; // пользователь уже тапнул другое слово
     translateCache[key] = translated;
-    saveCache();
+    saveTranslateCache();
     tEl.textContent = translated;
     tEl.className = 'tp-translation';
   } catch (err) {
@@ -232,12 +584,93 @@ function closePanel() {
   document.querySelectorAll('.w.active').forEach(x => x.classList.remove('active'));
 }
 
-// Восстанавливаем последний вставленный текст между заходами.
-const savedText = localStorage.getItem(STORAGE_TEXT);
-if (savedText) {
-  document.getElementById('textInput').value = savedText;
-  showReader();
+function updateSaveButton() {
+  const btn = document.getElementById('tpSave');
+  const already = savedWords.some(w => w.word === currentWord);
+  btn.textContent = already ? '✓ Сохранено' : '★ Сохранить слово';
+  btn.classList.toggle('saved', already);
 }
+
+function saveCurrentWord() {
+  if (!currentWord) return;
+  if (savedWords.some(w => w.word === currentWord)) return;
+  const translation = document.getElementById('tpTranslation').textContent;
+  savedWords.push({ word: currentWord, translation, ts: Date.now() });
+  persistSavedWords();
+  updateSaveButton();
+}
+
+// ══════════════════════════════════════════════════════════════
+// СОХРАНЁННЫЕ СЛОВА
+// ══════════════════════════════════════════════════════════════
+function renderSavedList() {
+  const list = document.getElementById('savedList');
+  list.innerHTML = '';
+  if (!savedWords.length) {
+    list.innerHTML = '<div class="saved-empty">Пока пусто.<br>Открой книгу или текст, тапни слово и нажми «★ Сохранить слово».</div>';
+    return;
+  }
+  savedWords.slice().reverse().forEach(entry => {
+    const row = document.createElement('div');
+    row.className = 'saved-row';
+    const w = document.createElement('div'); w.className = 'saved-word'; w.textContent = entry.word;
+    const t = document.createElement('div'); t.className = 'saved-translation'; t.textContent = entry.translation;
+    const del = document.createElement('button');
+    del.className = 'saved-del'; del.textContent = '×'; del.type = 'button';
+    del.setAttribute('aria-label', `Удалить «${entry.word}»`);
+    del.addEventListener('click', () => {
+      savedWords = savedWords.filter(x => x.ts !== entry.ts);
+      persistSavedWords();
+      renderSavedList();
+    });
+    row.append(w, t, del);
+    list.appendChild(row);
+  });
+}
+
+async function copySavedWords() {
+  if (!savedWords.length) return;
+  const textOut = savedWords.map(w => `${w.word} — ${w.translation}`).join('\n');
+  const fb = document.getElementById('copyFeedback');
+  try {
+    await navigator.clipboard.writeText(textOut);
+    fb.textContent = 'Скопировано ✓';
+  } catch {
+    fb.textContent = 'Не удалось скопировать — выдели и скопируй вручную';
+  }
+  setTimeout(() => { fb.textContent = ''; }, 2500);
+}
+
+// ══════════════════════════════════════════════════════════════
+// СТАРТ
+// ══════════════════════════════════════════════════════════════
+window.handlePdfFile = handlePdfFile;
+window.showTextReader = showTextReader;
+window.showInput = showInput;
+window.openSaved = openSaved;
+window.closePanel = closePanel;
+window.saveCurrentWord = saveCurrentWord;
+window.copySavedWords = copySavedWords;
+
+persistSavedWords(); // обновить счётчик в шапке при загрузке
+
+(async () => {
+  const lastMode = localStorage.getItem(STORAGE_LAST_MODE);
+  if (lastMode === 'pdf') {
+    const opened = await openPdfFromStorage();
+    if (opened) return;
+  }
+  const savedText = localStorage.getItem(STORAGE_TEXT);
+  if (lastMode === 'text' && savedText) {
+    currentMode = 'text';
+    document.getElementById('textInput').value = savedText;
+    renderTextCard(savedText);
+    showScreen('view-reader');
+    document.getElementById('btn-edit').style.display = 'block';
+    return;
+  }
+  renderResumeBlock();
+})();
 </script>
 </body>
 </html>
