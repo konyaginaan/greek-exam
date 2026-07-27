@@ -703,7 +703,148 @@ const translateCache = JSON.parse(localStorage.getItem(STORAGE_CACHE) || '{}');
 function saveTranslateCache() { localStorage.setItem(STORAGE_CACHE, JSON.stringify(translateCache)); }
 
 let savedWords = JSON.parse(localStorage.getItem(STORAGE_SAVED) || '[]');
-function persistSavedWords() { localStorage.setItem(STORAGE_SAVED, JSON.stringify(savedWords)); }
+function persistSavedWords() {
+  localStorage.setItem(STORAGE_SAVED, JSON.stringify(savedWords));
+  scheduleWordsSync();
+}
+
+// ══════════════════════════════════════════════════════════════
+// ОБЛАЧНАЯ КОПИЯ (Telegram CloudStorage)
+// ══════════════════════════════════════════════════════════════
+// Сами PDF в облако не уезжают — там лимит 4 КБ на значение. Уезжает то, что
+// нельзя восстановить открытием файла заново: заметки, выделения, закладки,
+// слова и место чтения. Ключ книги — отпечаток файла (имя + размер), а НЕ id
+// записи: если вебвью когда-нибудь вычистит IndexedDB, достаточно снова
+// открыть тот же PDF, и всё это вернётся к нему само.
+// CloudStorage появился в Bot API 6.9, а вне Telegram SDK представляется
+// версией 6.0 — так что одна проверка заодно отключает облако в браузере.
+const cloudReady = (() => {
+  if (!tg || !tg.CloudStorage) return false;
+  try { return tg.isVersionAtLeast('6.9'); } catch { return false; }
+})();
+
+const CS_CHUNK = 3800;
+const csChunkCount = {};
+
+function csSet(key, val) {
+  if (!cloudReady) return;
+  try {
+    tg.CloudStorage.setItem(key, val, err => { if (err) console.warn('CloudStorage setItem', key, err); });
+  } catch (e) { console.warn('CloudStorage setItem threw', key, e); }
+}
+function csGet(key) {
+  return new Promise(resolve => {
+    if (!cloudReady) { resolve(null); return; }
+    try {
+      tg.CloudStorage.getItem(key, (err, val) => resolve(err ? null : (val || null)));
+    } catch { resolve(null); }
+  });
+}
+function csDel(key) {
+  if (!cloudReady) return;
+  try { tg.CloudStorage.removeItem(key); } catch {}
+}
+
+// Значение длиннее 4096 символов CloudStorage теряет молча, поэтому JSON
+// режется на части: в базовом ключе — их количество, сами части в <key>_0, _1…
+function csWriteJSON(baseKey, value) {
+  if (!cloudReady) return;
+  const str = JSON.stringify(value);
+  const parts = [];
+  for (let i = 0; i < str.length; i += CS_CHUNK) parts.push(str.slice(i, i + CS_CHUNK));
+  if (!parts.length) parts.push('');
+  csSet(baseKey, String(parts.length));
+  parts.forEach((p, i) => csSet(baseKey + '_' + i, p));
+  for (let i = parts.length; i < (csChunkCount[baseKey] || 0); i++) csDel(baseKey + '_' + i);
+  csChunkCount[baseKey] = parts.length;
+}
+
+async function csReadJSON(baseKey) {
+  const n = parseInt(await csGet(baseKey) || '0', 10);
+  if (!n) return null;
+  csChunkCount[baseKey] = n;
+  const parts = await Promise.all(Array.from({ length: n }, (_, i) => csGet(baseKey + '_' + i)));
+  if (parts.some(p => p === null)) return null; // часть не доехала — лучше ничего, чем обрывок JSON
+  try { return JSON.parse(parts.join('')); } catch { return null; }
+}
+
+// В ключах CloudStorage допустимы только [A-Za-z0-9_-], поэтому отпечаток
+// сворачиваем в пару 32-битных хешей (FNV-1a с разными сидами).
+function fileFingerprint(name, size) {
+  const src = (name || '') + '|' + (size || 0);
+  const fnv = seed => {
+    let h = seed;
+    for (let i = 0; i < src.length; i++) { h ^= src.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return (h >>> 0).toString(36);
+  };
+  return fnv(0x811c9dc5) + fnv(0x9e3779b9);
+}
+function bookCloudKey(book) {
+  return 'fb_' + (book.fp || fileFingerprint(book.name, book.data ? book.data.byteLength : 0));
+}
+
+const csTimers = {};
+function csDebounce(key, fn) {
+  clearTimeout(csTimers[key]);
+  csTimers[key] = setTimeout(fn, 900);
+}
+
+function scheduleBookSync(book) {
+  if (!cloudReady || !book) return;
+  const key = bookCloudKey(book);
+  csDebounce(key, () => csWriteJSON(key, {
+    title: book.title, author: book.author, sourceLang: book.sourceLang,
+    currentPage: book.currentPage, scrollPos: book.scrollPos,
+    notes: book.notes || [], bookmarks: book.bookmarks || [],
+  }));
+}
+
+// Объединяем по id, а не заменяем: если книгу читали с двух устройств,
+// ни одна заметка не должна пропасть.
+function mergeById(local, cloud) {
+  const out = (local || []).slice();
+  const have = new Set(out.map(x => x && x.id));
+  (cloud || []).forEach(x => { if (x && x.id && !have.has(x.id)) out.push(x); });
+  return out;
+}
+
+async function mergeBookFromCloud(book) {
+  if (!cloudReady || !book) return;
+  const data = await csReadJSON(bookCloudKey(book));
+  if (!data) return;
+  const patch = {};
+  const notes = mergeById(book.notes, data.notes);
+  const bookmarks = mergeById(book.bookmarks, data.bookmarks);
+  if (notes.length !== (book.notes || []).length) patch.notes = notes;
+  if (bookmarks.length !== (book.bookmarks || []).length) patch.bookmarks = bookmarks;
+  // Место чтения подтягиваем, только если локально книгу ещё не открывали,
+  // иначе облако откатило бы назад более свежую локальную позицию.
+  if ((book.currentPage || 1) <= 1 && data.currentPage > 1) {
+    patch.currentPage = data.currentPage;
+    patch.scrollPos = data.scrollPos || 0;
+  }
+  if (!Object.keys(patch).length) return;
+  Object.assign(book, patch);
+  await idbUpdateBook(book.id, patch);
+  if (currentBookId === book.id && patch.notes) redrawAllHighlights();
+}
+
+const CS_WORDS_KEY = 'fw_words';
+function scheduleWordsSync() {
+  if (!cloudReady) return;
+  csDebounce(CS_WORDS_KEY, () => csWriteJSON(CS_WORDS_KEY, savedWords));
+}
+async function mergeWordsFromCloud() {
+  if (!cloudReady) return;
+  const cloud = await csReadJSON(CS_WORDS_KEY);
+  if (!Array.isArray(cloud) || !cloud.length) return;
+  const have = new Set(savedWords.map(w => w && w.word));
+  const added = cloud.filter(w => w && w.word && !have.has(w.word));
+  if (!added.length) return;
+  savedWords = savedWords.concat(added).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  localStorage.setItem(STORAGE_SAVED, JSON.stringify(savedWords));
+  if (activeTab === 'view-words') renderWordsList();
+}
 
 // ══════════════════════════════════════════════════════════════
 // ОФОРМЛЕНИЕ (тема, акцент, масштаб, яркость)
@@ -1069,6 +1210,9 @@ async function handlePdfFile(file) {
   const buf = await file.arrayBuffer();
   const record = {
     id: newId(), name: file.name, data: buf,
+    // Отпечаток файла — по нему книга находит свои заметки в облаке даже
+    // после переустановки, когда id записи будет уже другой.
+    fp: fileFingerprint(file.name, buf.byteLength),
     title: stripExt(file.name), author: '',
     coverDataUrl: null, coverIsOwn: false,
     addedAt: Date.now(), lastOpenedAt: Date.now(),
@@ -1121,6 +1265,13 @@ async function openBook(id) {
   document.getElementById('chromeTitle').textContent = book.title || stripExt(book.name);
   setChrome(true);
   showScreen('view-pdf');
+  // Облако может вернуть заметки и место чтения — например, если книгу
+  // добавили заново после чистки вебвью. Ждём недолго, чтобы не задерживать
+  // открытие: не успеет — заметки подтянутся и перерисуются чуть позже сами.
+  await Promise.race([
+    mergeBookFromCloud(book).catch(() => {}),
+    new Promise(r => setTimeout(r, 1200)),
+  ]);
   await renderPdf(book.data, book.scrollPos || 0);
   idbUpdateBook(id, { lastOpenedAt: Date.now() });
   return true;
@@ -1172,7 +1323,9 @@ function onReaderScroll() {
   clearTimeout(scrollSaveTimer);
   scrollSaveTimer = setTimeout(() => {
     if (!currentBookId) return;
-    idbUpdateBook(currentBookId, { scrollPos: window.scrollY, currentPage: currentPageNumber() });
+    const patch = { scrollPos: window.scrollY, currentPage: currentPageNumber() };
+    idbUpdateBook(currentBookId, patch);
+    if (currentBook) { Object.assign(currentBook, patch); scheduleBookSync(currentBook); }
   }, 250);
   updatePageIndicator();
 }
@@ -1231,7 +1384,7 @@ async function renderPdfPage(info) {
     nodes.push({ node: n, start: text.length, end: text.length + n.textContent.length });
     text += n.textContent;
   }
-  const map = { text, nodes, page: info.num, hlLayer, wrap };
+  const map = { text, nodes, page: info.num, hlLayer, wrap, layer: textLayerDiv };
   pdfWordMaps.set(textLayerDiv, map);
   info.map = map;
   drawHighlights(map);
@@ -1258,11 +1411,62 @@ function rangeFromOffsets(map, start, end) {
   return r;
 }
 
+function nodeEntry(map, node) {
+  if (!map.byNode) map.byNode = new Map(map.nodes.map(n => [n.node, n]));
+  return map.byNode.get(node) || null;
+}
+
+// Первый/последний текстовый фрагмент внутри поддерева, известный карте.
+function edgeEntry(map, root, last) {
+  if (root.nodeType === Node.TEXT_NODE) return nodeEntry(map, root);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let found = null, n;
+  while ((n = walker.nextNode())) {
+    const e = nodeEntry(map, n);
+    if (!e) continue;
+    if (!last) return e;
+    found = e;
+  }
+  return found;
+}
+
+// Границу выделения браузер отдаёт не только текстовым узлом: если протянуть
+// через всю строку или тапнуть дважды, startContainer/endContainer оказываются
+// ЭЛЕМЕНТАМИ, а offset — индексом дочернего узла. Раньше такие границы просто
+// не находились в карте, offsetsFromRange возвращал null, и маркер молча не
+// сохранялся. Поэтому границу-элемент приводим к позиции в плоском тексте:
+// встаём в начало ближайшего текста справа, а если справа его нет — в конец
+// ближайшего слева.
+function boundaryOffset(map, container, offset) {
+  const direct = container.nodeType === Node.TEXT_NODE ? nodeEntry(map, container) : null;
+  if (direct) return direct.start + offset;
+  const kids = container.childNodes || [];
+  for (let i = offset; i < kids.length; i++) {
+    const e = edgeEntry(map, kids[i], false);
+    if (e) return e.start;
+  }
+  for (let i = Math.min(offset, kids.length) - 1; i >= 0; i--) {
+    const e = edgeEntry(map, kids[i], true);
+    if (e) return e.end;
+  }
+  // Граница может оказаться вообще вне текстового слоя: поверх страницы лежит
+  // слой подсветки (position:absolute, inset:0), и браузер спокойно ставит в
+  // него начало выделения — текста там нет ни одного символа. Тогда просто
+  // прижимаем границу к началу или концу текста страницы, смотря с какой она
+  // стороны от слоя. Без этого маркер молча не сохранялся.
+  if (map.layer && container.compareDocumentPosition) {
+    const rel = map.layer.compareDocumentPosition(container);
+    if (rel & Node.DOCUMENT_POSITION_PRECEDING) return 0;
+    if (rel & Node.DOCUMENT_POSITION_FOLLOWING) return map.text.length;
+  }
+  return null;
+}
+
 function offsetsFromRange(map, range) {
-  const s = map.nodes.find(n => n.node === range.startContainer);
-  const e = map.nodes.find(n => n.node === range.endContainer);
-  if (!s || !e) return null;
-  return { start: s.start + range.startOffset, end: e.start + range.endOffset };
+  const start = boundaryOffset(map, range.startContainer, range.startOffset);
+  const end = boundaryOffset(map, range.endContainer, range.endOffset);
+  if (start === null || end === null || end <= start) return null;
+  return { start, end };
 }
 
 // pdf.js режет текст на фрагменты по кернингу, а не по словам (та же причина,
@@ -1310,13 +1514,27 @@ function redrawAllHighlights() {
 }
 
 function noteAtPoint(x, y, map) {
+  const notes = (currentBook && currentBook.notes || []).filter(nt => nt.page === map.page);
+  if (!notes.length) return null;
+
   const pos = caretAt(x, y);
-  if (!pos) return null;
-  const holder = map.nodes.find(n => n.node === pos.node);
-  if (!holder) return null;
-  const gi = holder.start + pos.offset;
-  return (currentBook && currentBook.notes || [])
-    .find(nt => nt.page === map.page && gi >= nt.startOffset && gi < nt.endOffset) || null;
+  const holder = pos ? nodeEntry(map, pos.node) : null;
+  if (holder) {
+    const gi = holder.start + pos.offset;
+    const hit = notes.find(nt => gi >= nt.startOffset && gi < nt.endOffset);
+    if (hit) return hit;
+  }
+
+  // Каретка попадает в текст не всегда: поверх страницы лежит слой подсветки,
+  // и точка легко «приземляется» в него, а не в текстовый слой. Тогда решаем
+  // геометрией — попал ли тап в прямоугольники самой заметки.
+  return notes.find(nt => {
+    if (nt.startOffset === undefined) return false;
+    const range = rangeFromOffsets(map, nt.startOffset, nt.endOffset);
+    if (!range) return false;
+    return mergeLineRects(Array.from(range.getClientRects()))
+      .some(r => x >= r.left - 2 && x <= r.right + 2 && y >= r.top && y <= r.bottom);
+  }) || null;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1379,6 +1597,7 @@ function wordAtPoint(x, y, map) {
 // ВЫДЕЛЕНИЕ ТЕКСТА
 // ══════════════════════════════════════════════════════════════
 let pendingSelection = null; // {text, map, start, end}
+let selSettleTimer = null;   // см. scheduleSelToolbar
 
 function clearSelectionPreview() {
   document.querySelectorAll('.hl-rect-preview').forEach(el => el.remove());
@@ -1411,6 +1630,7 @@ function handleSelectionChange() {
   const tlayer = anchorEl && anchorEl.closest ? anchorEl.closest('.textLayer') : null;
 
   if (!text || !tlayer) {
+    clearTimeout(selSettleTimer);
     bar.classList.remove('show');
     pendingSelection = null;
     clearSelectionPreview();
@@ -1422,6 +1642,7 @@ function handleSelectionChange() {
   const offsets = map ? offsetsFromRange(map, range) : null;
   pendingSelection = { text, map, ...(offsets || {}) };
   if (map) renderSelectionPreview(map, range);
+  scheduleSelToolbar();
 }
 document.addEventListener('selectionchange', handleSelectionChange);
 
@@ -1444,7 +1665,23 @@ function positionSelToolbar() {
   if (!pendingSelection || !sel || sel.isCollapsed || !sel.rangeCount) return;
   positionFloatingBar(document.getElementById('selToolbar'), sel.getRangeAt(0).getBoundingClientRect());
 }
-document.addEventListener('pointerup', () => requestAnimationFrame(positionSelToolbar));
+
+// Панель показываем, когда выделение «затихло»: пока его тянут, selectionchange
+// сыплется непрерывно и таймер всё время сбрасывается — поэтому панель не скачет
+// за пальцем. Отпускание пальца показывает её сразу, но привязываться только к
+// pointerup нельзя: он теряется, если отпустить вне окна, и тогда панель не
+// появилась бы вовсе. Таймер — страховка, которая сама себя чинит.
+function scheduleSelToolbar() {
+  clearTimeout(selSettleTimer);
+  selSettleTimer = setTimeout(positionSelToolbar, 350);
+}
+// Считаем позицию сразу, без requestAnimationFrame: в скрытой или свёрнутой
+// вкладке rAF не выполняется вовсе, и панель тогда не появлялась бы никогда.
+// Таймер не сбрасываем — пусть перепроверит следом, вреда от этого нет.
+document.addEventListener('pointerup', () => {
+  positionSelToolbar();
+  scheduleSelToolbar();
+});
 
 // Нажатие на панель не должно сначала снять выделение (обычное поведение
 // браузера на pointerdown вне выделенного текста) — иначе к моменту click
@@ -1476,6 +1713,7 @@ async function highlightSelection(color) {
   };
   currentBook.notes = (currentBook.notes || []).concat(note);
   await idbUpdateBook(currentBookId, { notes: currentBook.notes });
+  scheduleBookSync(currentBook);
   document.getElementById('selToolbar').classList.remove('show');
   window.getSelection().removeAllRanges();
   drawHighlights(sel.map);
@@ -1522,6 +1760,7 @@ function openNoteQuickBar(note, map) {
       const notes = (currentBook.notes || []).map(n => n.id === note.id ? note : n);
       currentBook.notes = notes;
       await idbUpdateBook(currentBookId, { notes });
+      scheduleBookSync(currentBook);
       redrawAllHighlights();
       openNoteQuickBar(note, map);
     });
@@ -1547,6 +1786,7 @@ document.getElementById('noteQuickDelete').addEventListener('click', async () =>
   const rest = (currentBook.notes || []).filter(n => n.id !== note.id);
   currentBook.notes = rest;
   await idbUpdateBook(currentBookId, { notes: rest });
+  scheduleBookSync(currentBook);
   closeNoteQuickBar();
   drawHighlights(map);
 });
@@ -1580,6 +1820,7 @@ async function persistNote() {
   const notes = (currentBook.notes || []).map(n => n.id === editingNote.id ? editingNote : n);
   currentBook.notes = notes;
   await idbUpdateBook(currentBookId, { notes });
+  scheduleBookSync(currentBook);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1681,6 +1922,7 @@ async function saveCurrentNote() {
   };
   currentBook.notes = (currentBook.notes || []).concat(note);
   await idbUpdateBook(currentBookId, { notes: currentBook.notes });
+  scheduleBookSync(currentBook);
   if (info && info.map) drawHighlights(info.map);
   updateSaveButton();
 }
@@ -1706,6 +1948,7 @@ async function addBookmark() {
   };
   currentBook.bookmarks = (currentBook.bookmarks || []).concat(bookmark);
   await idbUpdateBook(currentBookId, { bookmarks: currentBook.bookmarks });
+  scheduleBookSync(currentBook);
 
   const btn = document.getElementById('chromeBookmark');
   btn.innerHTML = icon('bookmarkFill');
@@ -1752,7 +1995,9 @@ async function renderBookmarks() {
     del.innerHTML = icon('trash', 'icon-sm');
     del.addEventListener('click', async () => {
       const rest = (book.bookmarks || []).filter(x => x.id !== bm.id);
+      book.bookmarks = rest;
       await idbUpdateBook(book.id, { bookmarks: rest });
+      scheduleBookSync(book);
       if (currentBookId === book.id) currentBook.bookmarks = rest;
       renderBookmarks();
     });
@@ -1809,7 +2054,9 @@ async function renderNotes() {
     del.innerHTML = icon('trash', 'icon-sm');
     del.addEventListener('click', async () => {
       const rest = (book.notes || []).filter(x => x.id !== nt.id);
+      book.notes = rest;
       await idbUpdateBook(book.id, { notes: rest });
+      scheduleBookSync(book);
       if (currentBookId === book.id) { currentBook.notes = rest; redrawAllHighlights(); }
       renderNotes();
     });
@@ -1973,6 +2220,7 @@ document.getElementById('noteDelete').addEventListener('click', async () => {
   const rest = (currentBook.notes || []).filter(n => n.id !== editingNote.id);
   currentBook.notes = rest;
   await idbUpdateBook(currentBookId, { notes: rest });
+  scheduleBookSync(currentBook);
   editingNote = null;
   closeAllSheets();
   redrawAllHighlights();
@@ -1991,6 +2239,7 @@ applyAppearance();
 renderSelColors();
 renderTabbar();
 showTab('view-library');
+mergeWordsFromCloud().catch(() => {});
 </script>
 </body>
 </html>
