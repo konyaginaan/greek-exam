@@ -207,6 +207,7 @@
   .textLayer span, .textLayer br {
     color: transparent; position: absolute; white-space: pre;
     cursor: pointer; transform-origin: 0% 0%;
+    -webkit-user-select: text; user-select: text; -webkit-touch-callout: default;
   }
   .textLayer ::selection { background: color-mix(in srgb, var(--accent) 32%, transparent); }
 
@@ -289,7 +290,6 @@
   /* перевод */
   .tp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
   .tp-word { font-size: 23px; font-weight: 800; word-break: break-word; line-height: 1.25; }
-  .tp-word.long { font-size: 15px; font-weight: 600; line-height: 1.5; }
   .tp-close {
     background: var(--surface-2); border: none; border-radius: 50%;
     width: 30px; height: 30px; flex-shrink: 0; color: var(--muted); cursor: pointer;
@@ -495,10 +495,6 @@
   <div class="tp-top">
     <div class="tp-word" id="tpWord"></div>
     <button class="tp-close" id="tpClose" aria-label="Закрыть"></button>
-  </div>
-  <div class="tp-lang-row">
-    <span class="tp-lang-label">Книга</span>
-    <div class="tp-langs" id="tpSourceLangs"></div>
   </div>
   <div class="tp-lang-row">
     <span class="tp-lang-label">Перевод</span>
@@ -718,16 +714,16 @@ function renderLangGroup(el, langs, current, onPick) {
   });
 }
 function renderLangToggles() {
-  renderLangGroup(document.getElementById('tpSourceLangs'), SOURCE_LANGS, sourceLang, setSourceLang);
   renderLangGroup(document.getElementById('tpTargetLangs'), TARGET_LANGS, targetLang, setTargetLang);
   renderLangGroup(document.getElementById('setTargetLangs'), TARGET_LANGS, targetLang, setTargetLang);
 }
+// Язык книги — редкая настройка, меняется в меню книги («...»), а не на
+// каждом переводе: setSourceLang зовётся оттуда (см. openBookSheet).
 function setSourceLang(code) {
   if (code === sourceLang) return;
   sourceLang = code;
   localStorage.setItem(STORAGE_SOURCE_LANG, code);
   if (currentBookId) idbUpdateBook(currentBookId, { sourceLang: code });
-  renderLangToggles();
   if (currentText) translateText(currentText);
 }
 function setTargetLang(code) {
@@ -971,9 +967,19 @@ async function openBookSheet(id) {
         <div class="row-sub" id="bsAuthor"></div>
       </div>
     </div>
+    <div class="tp-lang-row" style="margin:16px 0 4px;">
+      <span class="tp-lang-label">Язык книги</span>
+      <div class="tp-langs" id="bsSourceLangs"></div>
+    </div>
     <div id="bsItems"></div>`;
   body.querySelector('#bsTitle').textContent = book.title || stripExt(book.name);
   body.querySelector('#bsAuthor').textContent = book.author || 'Автор не указан';
+  renderLangGroup(body.querySelector('#bsSourceLangs'), SOURCE_LANGS, book.sourceLang || 'el', async code => {
+    if (code === book.sourceLang) return;
+    await idbUpdateBook(id, { sourceLang: code });
+    if (currentBookId === id) setSourceLang(code);
+    openBookSheet(id);
+  });
 
   const items = body.querySelector('#bsItems');
   const add = (ic, label, on, handler, cls = '') => {
@@ -1217,6 +1223,25 @@ function offsetsFromRange(map, range) {
   return { start: s.start + range.startOffset, end: e.start + range.endOffset };
 }
 
+// pdf.js режет текст на фрагменты по кернингу, а не по словам (та же причина,
+// по которой существует pdfWordMaps) — Range.getClientRects() поэтому отдаёт
+// по прямоугольнику на каждый обрывок span'а, а не один на строку, и подсветка
+// выходит рваной. Склеиваем прямоугольники одной строки (близкие top/height)
+// в один сплошной — от самого левого до самого правого края.
+function mergeLineRects(rects) {
+  const lines = [];
+  rects.forEach(r => {
+    if (!r.width || !r.height) return;
+    let line = lines.find(l => Math.abs(l.top - r.top) < 3 && Math.abs(l.height - r.height) < 3);
+    if (!line) { lines.push({ top: r.top, bottom: r.bottom, left: r.left, right: r.right }); return; }
+    line.top = Math.min(line.top, r.top);
+    line.bottom = Math.max(line.bottom, r.bottom);
+    line.left = Math.min(line.left, r.left);
+    line.right = Math.max(line.right, r.right);
+  });
+  return lines;
+}
+
 function drawHighlights(map) {
   if (!map || !map.hlLayer) return;
   map.hlLayer.innerHTML = '';
@@ -1225,10 +1250,10 @@ function drawHighlights(map) {
   notes.forEach(nt => {
     const range = rangeFromOffsets(map, nt.startOffset, nt.endOffset);
     if (!range) return;
-    Array.from(range.getClientRects()).forEach(r => {
+    mergeLineRects(Array.from(range.getClientRects())).forEach(r => {
       const d = document.createElement('div');
       d.className = 'hl-rect';
-      d.style.cssText = `left:${r.left - base.left}px;top:${r.top - base.top}px;width:${r.width}px;height:${r.height}px;background:${hlHex(nt.color)};opacity:0.5`;
+      d.style.cssText = `left:${r.left - base.left - 2}px;top:${r.top - base.top}px;width:${r.right - r.left + 4}px;height:${r.bottom - r.top}px;background:${hlHex(nt.color)};opacity:0.5`;
       map.hlLayer.appendChild(d);
     });
   });
@@ -1261,7 +1286,7 @@ document.getElementById('pdfContainer').addEventListener('click', e => {
       const note = noteAtPoint(e.clientX, e.clientY, map);
       if (note) { openNoteSheet(note); return; }
       const word = wordAtPoint(e.clientX, e.clientY, map);
-      if (word) { openPanel(word); return; }
+      if (word) { openPanel(word, true); return; }
     }
   }
   setChrome(!chromeVisible);
@@ -1419,11 +1444,14 @@ async function persistNote() {
 let currentText = null;
 let requestToken = 0;
 
-async function openPanel(text) {
+// showOriginal — только для тапа по одному слову: сам оригинал уже виден
+// прямо на странице (для выделения — как подсветка, для обычного слова —
+// нет), так что дублировать длинный выделенный отрывок в шторке незачем.
+async function openPanel(text, showOriginal) {
   currentText = text;
   const wordEl = document.getElementById('tpWord');
   wordEl.textContent = text;
-  wordEl.classList.toggle('long', text.length > 60);
+  wordEl.style.display = showOriginal ? '' : 'none';
   updateSaveButton();
   renderLangToggles();
   openSheet('panel');
