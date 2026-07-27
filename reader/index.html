@@ -845,11 +845,9 @@ function pickFile() { document.getElementById('pdfFileInput').click(); }
 // БИБЛИОТЕКА
 // ══════════════════════════════════════════════════════════════
 const FILTERS = [
-  { code: 'reading', label: 'Читаю', match: b => !b.archived && b.status === 'reading' },
-  { code: 'want', label: 'Хочу прочитать', match: b => !b.archived && b.status === 'want' },
+  { code: 'reading', label: 'Мои книги', match: b => !b.archived },
   { code: 'finished', label: 'Прочитано', match: b => !b.archived && b.status === 'finished' },
   { code: 'favorite', label: 'Избранное', match: b => !b.archived && b.favorite },
-  { code: 'archived', label: 'Архив', match: b => b.archived },
 ];
 let activeFilter = 'reading';
 let searchQuery = '';
@@ -1767,7 +1765,7 @@ document.getElementById('tpSave').addEventListener('click', saveCurrentWord);
 document.getElementById('selTranslate').addEventListener('click', translateSelection);
 document.getElementById('addBookBtn').addEventListener('click', pickFile);
 document.getElementById('pdfFileInput').addEventListener('change', e => handlePdfFile(e.target.files[0]));
-document.getElementById('chromeBack').addEventListener('click', () => showTab('view-library'));
+document.getElementById('chromeBack').addEventListener('click', () => showTab(activeTab));
 document.getElementById('chromeBookmark').addEventListener('click', addBookmark);
 document.getElementById('chromeMenu').addEventListener('click', () => currentBookId && openBookSheet(currentBookId));
 document.getElementById('notesTabSwitch').addEventListener('click', () => {
