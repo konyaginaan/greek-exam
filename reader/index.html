@@ -1512,11 +1512,14 @@ function saveCurrentWord() {
 // ══════════════════════════════════════════════════════════════
 async function addBookmark() {
   if (!currentBookId) return;
+  const page = currentPageNumber();
+  const pageText = (currentPages[page - 1] && currentPages[page - 1].map && currentPages[page - 1].map.text) || '';
   const bookmark = {
     id: newId(),
     scrollPos: window.scrollY,
-    page: currentPageNumber(),
+    page,
     pageCount: currentPages.length || currentBook.pageCount || 0,
+    snippet: pageText.replace(/\s+/g, ' ').trim().slice(0, 100),
     createdAt: Date.now(),
   };
   currentBook.bookmarks = (currentBook.bookmarks || []).concat(bookmark);
@@ -1551,8 +1554,11 @@ async function renderBookmarks() {
     const main = document.createElement('div');
     main.className = 'row-main';
     main.innerHTML = `<div class="row-title"></div>
+      <div class="row-note"></div>
       <div class="row-sub">Стр. ${bm.page}${bm.pageCount ? ' из ' + bm.pageCount : ''} · ${fmtDate(bm.createdAt)}</div>`;
     main.querySelector('.row-title').textContent = book.title || stripExt(book.name);
+    const snippetEl = main.querySelector('.row-note');
+    if (bm.snippet) snippetEl.textContent = bm.snippet + (bm.snippet.length >= 100 ? '…' : ''); else snippetEl.remove();
     main.addEventListener('click', async () => {
       await openBook(book.id);
       requestAnimationFrame(() => window.scrollTo(0, bm.scrollPos));
