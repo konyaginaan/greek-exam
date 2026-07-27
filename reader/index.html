@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Читалка</title>
+<title>Folio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%236F8C5A'/%3E%3Cpath d='M7 4h7l3 3v13H7V4Z' fill='%23F4F1EA'/%3E%3Cpath d='M14 4l3 3h-3V4Z' fill='%23E2DCCF'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%236F8C5A'/%3E%3Cpath d='M7 4h7l3 3v13H7V4Z' fill='%23F4F1EA'/%3E%3Cpath d='M14 4l3 3h-3V4Z' fill='%23E2DCCF'/%3E%3C/svg%3E">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -70,8 +72,12 @@
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
     padding: calc(env(safe-area-inset-top, 0px) + 18px) 0 10px;
   }
+  .title-wrap { display: flex; align-items: center; gap: 9px; }
   .title { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
-  .title em { font-style: normal; color: var(--accent); }
+  .app-mark {
+    width: 30px; height: 30px; border-radius: 9px; background: var(--accent);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
   .screen-title { font-size: 20px; font-weight: 800; }
 
   /* ══════════════ ПОИСК И ФИЛЬТРЫ ══════════════ */
@@ -408,7 +414,10 @@
 <!-- ═════════ БИБЛИОТЕКА ═════════ -->
 <div class="screen active with-nav" id="view-library">
   <div class="top">
-    <div class="title">Greek <em>Reader</em></div>
+    <div class="title-wrap">
+      <span class="app-mark"><svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><path d="M7 4h7l3 3v13H7V4Z" fill="var(--bg)"/><path d="M14 4l3 3h-3V4Z" fill="var(--border)"/></svg></span>
+      <div class="title">Folio</div>
+    </div>
     <button class="btn-link" id="addBookBtn" aria-label="Добавить книгу"></button>
   </div>
   <div class="search-wrap">
@@ -440,12 +449,14 @@
 
 <!-- ═════════ ЗАМЕТКИ ═════════ -->
 <div class="screen with-nav" id="view-notes">
-  <div class="top">
-    <div class="screen-title">Заметки</div>
-    <button class="btn-link" id="notesTabSwitch" style="font-size:12px;font-weight:700;">СЛОВА</button>
-  </div>
-  <div class="chips" id="notesChips"></div>
+  <div class="top"><div class="screen-title">Заметки</div></div>
   <div id="notesBody"></div>
+</div>
+
+<!-- ═════════ СЛОВА ═════════ -->
+<div class="screen with-nav" id="view-words">
+  <div class="top"><div class="screen-title">Слова</div></div>
+  <div id="wordsBody"></div>
 </div>
 
 <!-- ═════════ НАСТРОЙКИ ═════════ -->
@@ -807,6 +818,7 @@ const TABS = [
   { id: 'view-library', label: 'Библиотека', icon: 'book', render: renderLibrary },
   { id: 'view-bookmarks', label: 'Закладки', icon: 'bookmark', render: renderBookmarks },
   { id: 'view-notes', label: 'Заметки', icon: 'note', render: renderNotes },
+  { id: 'view-words', label: 'Слова', icon: 'star', render: renderWordsList },
   { id: 'view-settings', label: 'Настройки', icon: 'settings', render: renderSettings },
 ];
 let activeTab = 'view-library';
@@ -1625,17 +1637,9 @@ function fmtDate(ts) {
 // ══════════════════════════════════════════════════════════════
 // ЗАМЕТКИ И СЛОВА
 // ══════════════════════════════════════════════════════════════
-let notesTab = 'notes'; // 'notes' | 'words'
-
 async function renderNotes() {
   const body = document.getElementById('notesBody');
-  const chips = document.getElementById('notesChips');
-  const switcher = document.getElementById('notesTabSwitch');
-  chips.style.display = 'none';
-  switcher.textContent = notesTab === 'notes' ? 'СЛОВА' : 'ВЫДЕЛЕНИЯ';
   body.innerHTML = '';
-
-  if (notesTab === 'words') return renderWordsList(body);
 
   const books = await idbGetAllBooks();
   const all = books.flatMap(b => (b.notes || []).map(nt => ({ nt, book: b })));
@@ -1684,7 +1688,9 @@ async function renderNotes() {
   body.append(list);
 }
 
-function renderWordsList(body) {
+function renderWordsList() {
+  const body = document.getElementById('wordsBody');
+  body.innerHTML = '';
   if (!savedWords.length) {
     body.innerHTML = `<div class="empty">
       <div class="empty-icon">${icon('star')}</div>
@@ -1711,7 +1717,7 @@ function renderWordsList(body) {
     del.addEventListener('click', () => {
       savedWords = savedWords.filter(x => x.ts !== entry.ts);
       persistSavedWords();
-      renderNotes();
+      renderWordsList();
     });
     row.append(main, del);
     list.append(row);
@@ -1813,10 +1819,6 @@ document.getElementById('pdfFileInput').addEventListener('change', e => handlePd
 document.getElementById('chromeBack').addEventListener('click', () => showTab(activeTab));
 document.getElementById('chromeBookmark').addEventListener('click', addBookmark);
 document.getElementById('chromeMenu').addEventListener('click', () => currentBookId && openBookSheet(currentBookId));
-document.getElementById('notesTabSwitch').addEventListener('click', () => {
-  notesTab = notesTab === 'notes' ? 'words' : 'notes';
-  renderNotes();
-});
 document.getElementById('searchInput').addEventListener('input', e => {
   searchQuery = e.target.value;
   renderLibrary();
