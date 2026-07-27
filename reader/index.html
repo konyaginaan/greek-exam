@@ -71,35 +71,30 @@
   }
   .btn-primary:active { opacity: 0.85; }
 
-  /* Обложка текущей книги — как плитка в iBooks: крупная, тап открывает чтение. */
-  .book-shelf { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 1rem; }
-  .book-cover {
-    width: 100%; max-width: 260px; aspect-ratio: 3/4;
-    background: linear-gradient(155deg, #fff 0%, #f6f4ef 100%);
-    border-radius: 10px;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.16), 0 2px 6px rgba(0,0,0,0.08);
-    border: none; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 14px; padding: 1.5rem;
-    position: relative;
-  }
-  .book-cover::before {
-    content: ''; position: absolute; left: 0; top: 8%; bottom: 8%; width: 6px;
-    background: rgba(0,0,0,0.06); border-radius: 2px 0 0 2px;
-  }
-  .book-cover:active { transform: scale(0.98); }
-  .book-cover-icon { font-size: 46px; }
-  .book-cover-name {
-    font-size: 15px; font-weight: 700; text-align: center;
-    word-break: break-word; line-height: 1.35;
-  }
-  .book-shelf-sub { font-size: 13px; color: var(--muted); }
   .btn-outline {
     padding: 12px 24px; border: 1.5px solid var(--border); border-radius: 12px;
     background: none; color: var(--muted); font-size: 13px; font-weight: 700;
     cursor: pointer;
   }
   .btn-outline:active { opacity: 0.6; }
+
+  /* Библиотека из нескольких книг: полки «Читаю»/«Прочитано» + список карточек. */
+  .lib-shelf-tabs { display: flex; gap: 6px; padding: 4px 0 14px; }
+  .book-list { display: flex; flex-direction: column; gap: 8px; }
+  .book-card {
+    background: var(--surface); border-radius: 12px;
+    padding: 0.7rem 0.9rem; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .book-card-open {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px;
+    background: none; border: none; cursor: pointer; text-align: left; padding: 0;
+  }
+  .book-card-icon { font-size: 28px; flex-shrink: 0; }
+  .book-card-info { min-width: 0; }
+  .book-card-name { font-weight: 700; word-break: break-word; line-height: 1.3; }
+  .book-card-progress { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .lib-add-row { padding-top: 6px; text-align: center; }
 
   #pdfFileInput { display: none; }
 
@@ -152,6 +147,7 @@
     font-size: 13px; font-weight: 700; color: var(--muted);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .chrome-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
   .page-indicator {
     position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
@@ -163,6 +159,17 @@
   }
   .page-indicator.hidden { opacity: 0; }
 
+  /* Плавающая кнопка над выделенным текстом (слово/фраза/абзац) — единственный
+     способ вызвать перевод выделения, нативное контекстное меню не трогаем. */
+  .selection-translate-btn {
+    position: fixed; z-index: 45; display: none;
+    background: rgba(26,26,26,0.92); color: #fff; border: none;
+    padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  .selection-translate-btn.show { display: block; }
+
   /* ══════════════ ПЕРЕВОД (панель снизу) ══════════════ */
   .translate-panel {
     position: fixed; left: 0; right: 0; bottom: 0;
@@ -171,6 +178,7 @@
     border-radius: 20px 20px 0 0;
     box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
     padding: 1.25rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+    max-height: 70vh; overflow-y: auto;
     transform: translateY(110%);
     transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
     z-index: 50;
@@ -178,12 +186,24 @@
   .translate-panel.show { transform: translateY(0); }
   .tp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
   .tp-word { font-size: 24px; font-weight: 800; word-break: break-word; }
+  /* Панель переводит не только слово, но и выделенную фразу/абзац —
+     для длинного текста заголовок не должен выглядеть гигантским. */
+  .tp-word.long { font-size: 15px; font-weight: 600; line-height: 1.45; }
   .tp-close {
     background: var(--bg); border: none; border-radius: 50%;
     width: 32px; height: 32px; flex-shrink: 0;
     font-size: 16px; color: var(--muted); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
+  .tp-lang-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .tp-lang-label { font-size: 12px; color: var(--muted); font-weight: 700; width: 48px; flex-shrink: 0; }
+  .tp-langs { display: flex; gap: 6px; }
+  .tp-lang-btn {
+    border: none; border-radius: 20px; padding: 5px 12px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    background: var(--bg); color: var(--muted);
+  }
+  .tp-lang-btn.active { background: var(--lime); color: var(--text); }
   .tp-translation { font-size: 18px; color: var(--text); min-height: 27px; margin-bottom: 14px; }
   .tp-translation.loading { color: var(--muted); font-style: italic; }
   .tp-translation.error { color: #CC3366; }
@@ -230,6 +250,8 @@
     display: flex; align-items: center; justify-content: center;
   }
   .saved-del:active { background: #FFD6E0; color: #CC3366; }
+  .bookmark-row { cursor: pointer; }
+  .bookmark-row:active { opacity: 0.85; }
   .saved-empty { text-align: center; color: var(--muted); font-size: 14px; padding: 3rem 1rem; line-height: 1.6; }
   .copy-feedback { text-align: center; font-size: 13px; color: var(--lime-dark); font-weight: 700; height: 18px; }
 </style>
@@ -249,7 +271,12 @@
   <div class="reader-chrome" id="readerChrome">
     <button class="chrome-back" onclick="showLibrary()">‹ Библиотека</button>
     <div class="chrome-title" id="chromeTitle"></div>
-    <button class="btn-link" onclick="openSaved()">Слова</button>
+    <div class="chrome-actions">
+      <button class="btn-link" id="bookmarkBtn" onclick="addBookmark()" aria-label="Добавить закладку">🔖</button>
+      <button class="btn-link" onclick="openBookmarks()">Закладки</button>
+      <button class="btn-link" onclick="openSaved()">Слова</button>
+      <button class="btn-link" onclick="markFinished()" aria-label="Отметить прочитанной">✓</button>
+    </div>
   </div>
   <div id="pdfContainer"></div>
   <div class="page-indicator" id="pageIndicator"></div>
@@ -267,11 +294,29 @@
   <div class="saved-list" id="savedList"></div>
 </div>
 
+<div class="screen" id="view-bookmarks">
+  <div class="saved-top">
+    <div class="title">Greek <em>Reader</em></div>
+    <button class="btn-link" onclick="showLibrary()">Библиотека</button>
+  </div>
+  <div class="saved-list" id="bookmarksList"></div>
+</div>
+
+<button class="selection-translate-btn" id="selectionBtn" type="button" onclick="translateSelection()">Перевести</button>
+
 <div class="backdrop" id="backdrop" onclick="closePanel()"></div>
 <div class="translate-panel" id="panel">
   <div class="tp-top">
     <div class="tp-word" id="tpWord"></div>
     <button class="tp-close" onclick="closePanel()">×</button>
+  </div>
+  <div class="tp-lang-row">
+    <span class="tp-lang-label">Книга</span>
+    <div class="tp-langs" id="tpSourceLangs"></div>
+  </div>
+  <div class="tp-lang-row">
+    <span class="tp-lang-label">Перевод</span>
+    <div class="tp-langs" id="tpTargetLangs"></div>
   </div>
   <div class="tp-translation" id="tpTranslation"></div>
   <button class="tp-save" id="tpSave" onclick="saveCurrentWord()">★ Сохранить слово</button>
@@ -284,43 +329,173 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dis
 // ══════════════════════════════════════════════════════════════
 // ХРАНИЛИЩЕ
 // ══════════════════════════════════════════════════════════════
+// Старый однокнижный ключ (v1) — нужен только для миграции при апгрейде БД.
 const STORAGE_SCROLL_PDF = 'reader_pdf_scroll_v1';
 const STORAGE_CACHE = 'reader_translate_cache_v1';
 const STORAGE_SAVED = 'reader_saved_words_v1';
 
 const IDB_NAME = 'greek_reader_db';
-const IDB_STORE = 'files';
-const IDB_KEY = 'currentBook';
+const IDB_VERSION = 2;
+const IDB_STORE_BOOKS = 'books';
+const IDB_STORE_OLD = 'files'; // v1: один файл под ключом 'currentBook'
+const IDB_OLD_KEY = 'currentBook';
+
+function newId(prefix) {
+  return crypto.randomUUID ? crypto.randomUUID() : prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+}
 
 function idbOpen() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = (event) => {
+      const db = req.result;
+      const tx = event.target.transaction;
+      const createBooksStore = () => {
+        if (!db.objectStoreNames.contains(IDB_STORE_BOOKS)) {
+          db.createObjectStore(IDB_STORE_BOOKS, { keyPath: 'id' });
+        }
+      };
+      // Переносим единственную книгу из старой версии хранилища (если есть)
+      // в новый стор нескольких книг — иначе уже сохранённая книга потеряется.
+      if (db.objectStoreNames.contains(IDB_STORE_OLD)) {
+        const getReq = tx.objectStore(IDB_STORE_OLD).get(IDB_OLD_KEY);
+        getReq.onsuccess = () => {
+          createBooksStore();
+          const old = getReq.result;
+          if (old) {
+            tx.objectStore(IDB_STORE_BOOKS).add({
+              id: newId('b'),
+              name: old.name,
+              data: old.data,
+              addedAt: old.savedAt || Date.now(),
+              lastOpenedAt: old.savedAt || Date.now(),
+              status: 'reading',
+              scrollPos: parseInt(localStorage.getItem(STORAGE_SCROLL_PDF) || '0', 10),
+              currentPage: 1,
+              pageCount: 0,
+              sourceLang: localStorage.getItem(STORAGE_SOURCE_LANG) || 'el',
+              bookmarks: [],
+            });
+          }
+          db.deleteObjectStore(IDB_STORE_OLD);
+        };
+      } else {
+        createBooksStore();
+      }
+    };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
-async function idbSet(key, value) {
+
+async function idbAddBook(record) {
   const db = await idbOpen();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE, 'readwrite');
-    tx.objectStore(IDB_STORE).put(value, key);
-    tx.oncomplete = resolve;
+    const tx = db.transaction(IDB_STORE_BOOKS, 'readwrite');
+    tx.objectStore(IDB_STORE_BOOKS).add(record);
+    tx.oncomplete = () => resolve(record);
     tx.onerror = () => reject(tx.error);
   });
 }
-async function idbGet(key) {
+async function idbGetBook(id) {
   const db = await idbOpen();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE, 'readonly');
-    const req = tx.objectStore(IDB_STORE).get(key);
+    const tx = db.transaction(IDB_STORE_BOOKS, 'readonly');
+    const req = tx.objectStore(IDB_STORE_BOOKS).get(id);
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
+  });
+}
+async function idbGetAllBooks() {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE_BOOKS, 'readonly');
+    const req = tx.objectStore(IDB_STORE_BOOKS).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbUpdateBook(id, patch) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE_BOOKS, 'readwrite');
+    const store = tx.objectStore(IDB_STORE_BOOKS);
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const rec = getReq.result;
+      if (!rec) return;
+      Object.assign(rec, patch);
+      store.put(rec);
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 
 const translateCache = JSON.parse(localStorage.getItem(STORAGE_CACHE) || '{}');
 function saveTranslateCache() { localStorage.setItem(STORAGE_CACHE, JSON.stringify(translateCache)); }
+
+// ══════════════════════════════════════════════════════════════
+// ЯЗЫК КНИГИ И ЯЗЫК ПЕРЕВОДА
+// ══════════════════════════════════════════════════════════════
+const STORAGE_SOURCE_LANG = 'reader_source_lang_v1';
+const STORAGE_TARGET_LANG = 'reader_target_lang_v1';
+const SOURCE_LANGS = [
+  { code: 'el', label: 'EL' },
+  { code: 'en', label: 'EN' },
+  { code: 'fr', label: 'FR' },
+  { code: 'de', label: 'DE' },
+  { code: 'es', label: 'ES' },
+  { code: 'it', label: 'IT' },
+];
+const TARGET_LANGS = [
+  { code: 'ru', label: 'RU' },
+  { code: 'en', label: 'EN' },
+];
+
+// sourceLang — язык конкретной открытой книги (грузится/сохраняется в её
+// записи в IDB через openBook/setSourceLang), а не разовая глобальная
+// настройка: книги в библиотеке теперь могут быть на разных языках.
+// Значение по умолчанию для новых книг — язык последней открытой книги.
+let sourceLang = localStorage.getItem(STORAGE_SOURCE_LANG) || 'el';
+if (!SOURCE_LANGS.some(l => l.code === sourceLang)) sourceLang = 'el';
+let targetLang = localStorage.getItem(STORAGE_TARGET_LANG) || 'ru';
+if (!TARGET_LANGS.some(l => l.code === targetLang)) targetLang = 'ru';
+
+function renderLangGroup(containerId, langs, current, onPick) {
+  const box = document.getElementById(containerId);
+  box.innerHTML = '';
+  langs.forEach(l => {
+    const btn = document.createElement('button');
+    btn.className = 'tp-lang-btn' + (l.code === current ? ' active' : '');
+    btn.type = 'button';
+    btn.textContent = l.label;
+    btn.addEventListener('click', () => onPick(l.code));
+    box.append(btn);
+  });
+}
+
+function renderLangToggles() {
+  renderLangGroup('tpSourceLangs', SOURCE_LANGS, sourceLang, setSourceLang);
+  renderLangGroup('tpTargetLangs', TARGET_LANGS, targetLang, setTargetLang);
+}
+
+function setSourceLang(code) {
+  if (code === sourceLang) return;
+  sourceLang = code;
+  localStorage.setItem(STORAGE_SOURCE_LANG, sourceLang); // дефолт для следующей новой книги
+  if (currentBookId) idbUpdateBook(currentBookId, { sourceLang });
+  renderLangToggles();
+  if (currentText) translateWord(currentText);
+}
+
+function setTargetLang(code) {
+  if (code === targetLang) return;
+  targetLang = code;
+  localStorage.setItem(STORAGE_TARGET_LANG, targetLang);
+  renderLangToggles();
+  if (currentText) translateWord(currentText);
+}
 
 let savedWords = JSON.parse(localStorage.getItem(STORAGE_SAVED) || '[]');
 function persistSavedWords() {
@@ -328,11 +503,11 @@ function persistSavedWords() {
   document.getElementById('savedCount').textContent = savedWords.length;
 }
 
-// Греческие буквы (включая многотональные диакритики) — то, что распознаётся
-// как тап-слово. \p{Script=Greek}, а не диапазон кодов: у греческого знака
-// вопроса ";" и точки-разделителя "·" код лежит в том же unicode-блоке, что
-// и буквы, но Script=Common — они сюда не попадают.
-const GREEK_RE_CHAR = /\p{Script=Greek}/u;
+// Буквы любого языка/письменности (включая диакритики) — то, что распознаётся
+// как тап-слово. \p{L}\p{M}, а не диапазон кодов конкретного алфавита: книга
+// может быть на любом из поддерживаемых языков, а не только на греческом.
+// Знаки препинания (в т.ч. греческие ";" и "·") не входят в категории L/M.
+const WORD_CHAR_RE = /[\p{L}\p{M}]/u;
 
 // ══════════════════════════════════════════════════════════════
 // НАВИГАЦИЯ ЭКРАНОВ
@@ -341,6 +516,8 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
+
+let libraryShelf = 'reading'; // 'reading' | 'finished' — какая полка открыта в библиотеке
 
 async function showLibrary() {
   closePanel();
@@ -362,30 +539,73 @@ function pickFile() { document.getElementById('pdfFileInput').click(); }
 // ══════════════════════════════════════════════════════════════
 async function renderLibrary() {
   const body = document.getElementById('libraryBody');
-  const record = await idbGet(IDB_KEY);
+  const books = await idbGetAllBooks();
 
-  if (!record) {
+  if (!books.length) {
     body.innerHTML = `
       <div class="lib-empty">
         <div class="lib-empty-icon">📚</div>
         <div class="lib-empty-title">Пока пусто</div>
-        <div class="lib-empty-sub">Открой PDF-файл на греческом — потом можно будет тапнуть по любому слову, чтобы увидеть перевод</div>
+        <div class="lib-empty-sub">Открой PDF-файл — потом можно будет тапнуть по слову или выделить фразу, чтобы увидеть перевод. Язык книги и язык перевода настраиваются в панели перевода</div>
         <button class="btn-primary" onclick="pickFile()">Открыть PDF</button>
       </div>`;
     return;
   }
 
+  const shelfBooks = books
+    .filter(b => b.status === libraryShelf)
+    .sort((a, b) => (b.lastOpenedAt || b.addedAt) - (a.lastOpenedAt || a.addedAt));
+
   body.innerHTML = `
-    <div class="book-shelf">
-      <button class="book-cover" id="bookCoverBtn">
-        <div class="book-cover-icon">📖</div>
-        <div class="book-cover-name"></div>
-      </button>
-      <div class="book-shelf-sub">Продолжить чтение</div>
-      <button class="btn-outline" onclick="pickFile()">Открыть другой файл</button>
-    </div>`;
-  body.querySelector('.book-cover-name').textContent = record.name;
-  body.querySelector('#bookCoverBtn').addEventListener('click', openPdfFromStorage);
+    <div class="lib-shelf-tabs">
+      <button class="tp-lang-btn${libraryShelf === 'reading' ? ' active' : ''}" type="button" data-shelf="reading">Читаю</button>
+      <button class="tp-lang-btn${libraryShelf === 'finished' ? ' active' : ''}" type="button" data-shelf="finished">Прочитано</button>
+    </div>
+    <div class="book-list" id="bookList"></div>
+    <div class="lib-add-row"><button class="btn-outline" onclick="pickFile()">Открыть ещё файл</button></div>`;
+
+  body.querySelectorAll('.lib-shelf-tabs button').forEach(btn => {
+    btn.addEventListener('click', () => { libraryShelf = btn.dataset.shelf; renderLibrary(); });
+  });
+
+  const listEl = body.querySelector('#bookList');
+  if (!shelfBooks.length) {
+    listEl.innerHTML = `<div class="saved-empty">${libraryShelf === 'reading'
+      ? 'Нет книг в чтении.'
+      : 'Пока нет прочитанных книг — отметь книгу прочитанной в шапке читалки.'}</div>`;
+    return;
+  }
+  shelfBooks.forEach(b => listEl.appendChild(renderBookCard(b)));
+}
+
+function renderBookCard(book) {
+  const card = document.createElement('div');
+  card.className = 'book-card';
+  const progress = book.pageCount ? `стр. ${book.currentPage || 1} из ${book.pageCount}` : 'Ещё не открыта';
+  card.innerHTML = `
+    <button class="book-card-open" type="button">
+      <div class="book-card-icon">📖</div>
+      <div class="book-card-info">
+        <div class="book-card-name"></div>
+        <div class="book-card-progress"></div>
+      </div>
+    </button>`;
+  card.querySelector('.book-card-name').textContent = book.name;
+  card.querySelector('.book-card-progress').textContent = progress;
+  card.querySelector('.book-card-open').addEventListener('click', () => openBook(book.id));
+
+  if (book.status === 'finished') {
+    const backBtn = document.createElement('button');
+    backBtn.className = 'btn-link'; backBtn.type = 'button';
+    backBtn.textContent = '↺ Вернуть в чтение';
+    backBtn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      await idbUpdateBook(book.id, { status: 'reading' });
+      renderLibrary();
+    });
+    card.appendChild(backBtn);
+  }
+  return card;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -393,28 +613,45 @@ async function renderLibrary() {
 // ══════════════════════════════════════════════════════════════
 const pdfWordMaps = new WeakMap(); // textLayer div -> {text, nodeStart}
 let scrollSaveTimer = null;
+let bookmarkFeedbackTimer = null;
 let currentPages = []; // [{viewport, wrap}] текущей открытой книги — для индикатора страницы
 let chromeVisible = true;
+let currentBookId = null; // id открытой сейчас книги (в записи books)
 
 async function handlePdfFile(file) {
   if (!file) return;
   const buf = await file.arrayBuffer();
-  await idbSet(IDB_KEY, { name: file.name, data: buf, savedAt: Date.now() });
-  localStorage.removeItem(STORAGE_SCROLL_PDF);
-  await openPdfFromStorage();
+  const record = {
+    id: newId('b'),
+    name: file.name,
+    data: buf,
+    addedAt: Date.now(),
+    lastOpenedAt: Date.now(),
+    status: 'reading',
+    scrollPos: 0,
+    currentPage: 1,
+    pageCount: 0,
+    sourceLang: localStorage.getItem(STORAGE_SOURCE_LANG) || 'el',
+    bookmarks: [],
+  };
+  await idbAddBook(record);
+  await openBook(record.id);
 }
 
-async function openPdfFromStorage() {
-  const record = await idbGet(IDB_KEY);
-  if (!record) return false;
-  document.getElementById('chromeTitle').textContent = record.name;
+async function openBook(id) {
+  const book = await idbGetBook(id);
+  if (!book) return false;
+  currentBookId = id;
+  sourceLang = SOURCE_LANGS.some(l => l.code === book.sourceLang) ? book.sourceLang : 'el';
+  document.getElementById('chromeTitle').textContent = book.name;
   setChrome(true);
   showScreen('view-pdf');
-  await renderPdf(record.data);
+  await renderPdf(book.data, book.scrollPos || 0);
+  idbUpdateBook(id, { lastOpenedAt: Date.now() });
   return true;
 }
 
-async function renderPdf(arrayBuffer) {
+async function renderPdf(arrayBuffer, savedScroll) {
   const container = document.getElementById('pdfContainer');
   container.innerHTML = '';
   const doc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
@@ -449,11 +686,11 @@ async function renderPdf(arrayBuffer) {
   }, { rootMargin: '1000px 0px' });
   pageInfos.forEach(p => observer.observe(p.wrap));
 
-  // Возвращаемся туда, где остановились в прошлый раз.
-  const savedScroll = parseInt(localStorage.getItem(STORAGE_SCROLL_PDF) || '0', 10);
+  // Возвращаемся туда, где остановились в прошлый раз (позиция этой книги).
   if (savedScroll > 0) requestAnimationFrame(() => window.scrollTo(0, savedScroll));
 
   updatePageIndicator();
+  if (currentBookId) idbUpdateBook(currentBookId, { pageCount: doc.numPages });
   window.removeEventListener('scroll', onReaderScroll);
   window.addEventListener('scroll', onReaderScroll);
 }
@@ -461,14 +698,14 @@ async function renderPdf(arrayBuffer) {
 function onReaderScroll() {
   clearTimeout(scrollSaveTimer);
   scrollSaveTimer = setTimeout(() => {
-    localStorage.setItem(STORAGE_SCROLL_PDF, String(window.scrollY));
+    if (!currentBookId) return;
+    idbUpdateBook(currentBookId, { scrollPos: window.scrollY, currentPage: currentPageNumber() });
   }, 250);
   updatePageIndicator();
 }
 
-function updatePageIndicator() {
-  const el = document.getElementById('pageIndicator');
-  if (!currentPages.length) { el.textContent = ''; return; }
+function currentPageNumber() {
+  if (!currentPages.length) return 1;
   const probe = window.scrollY + innerHeight * 0.35;
   let cum = 64, current = 1; // 64 — верхний паддинг #pdfContainer
   for (let i = 0; i < currentPages.length; i++) {
@@ -477,7 +714,13 @@ function updatePageIndicator() {
     if (probe < cum + h) break;
     cum += h;
   }
-  el.textContent = current + ' / ' + currentPages.length;
+  return current;
+}
+
+function updatePageIndicator() {
+  const el = document.getElementById('pageIndicator');
+  if (!currentPages.length) { el.textContent = ''; return; }
+  el.textContent = currentPageNumber() + ' / ' + currentPages.length;
 }
 
 async function renderPdfPage({ page, viewport, wrap }) {
@@ -515,6 +758,9 @@ async function renderPdfPage({ page, viewport, wrap }) {
 // Тап по слову — перевод; тап по остальной части страницы (пустое место
 // между строк, поля) — показать/спрятать верхнюю панель, как в iBooks.
 document.getElementById('pdfContainer').addEventListener('click', e => {
+  // Клик, которым закрывают/снимают выделение (см. блок выделения ниже),
+  // не должен заодно открывать панель по слову или прятать шапку.
+  if (window.getSelection().toString().trim()) return;
   const tlayer = e.target.closest('.textLayer');
   if (tlayer) {
     const map = pdfWordMaps.get(tlayer);
@@ -523,6 +769,51 @@ document.getElementById('pdfContainer').addEventListener('click', e => {
   }
   setChrome(!chromeVisible);
 });
+
+// ══════════════════════════════════════════════════════════════
+// ВЫДЕЛЕНИЕ ТЕКСТА — перевод фразы/абзаца (не только одного слова)
+// ══════════════════════════════════════════════════════════════
+let pendingSelectionText = '';
+
+function handleSelectionChange() {
+  const sel = window.getSelection();
+  const btn = document.getElementById('selectionBtn');
+  const text = sel && !sel.isCollapsed && sel.rangeCount ? sel.toString().trim() : '';
+  const anchorNode = sel && sel.anchorNode;
+  const anchorEl = anchorNode ? (anchorNode.nodeType === 1 ? anchorNode : anchorNode.parentElement) : null;
+  const insideTextLayer = anchorEl && anchorEl.closest && anchorEl.closest('.textLayer');
+
+  if (!text || !insideTextLayer) {
+    btn.classList.remove('show');
+    pendingSelectionText = '';
+    return;
+  }
+
+  pendingSelectionText = text;
+  const rect = sel.getRangeAt(0).getBoundingClientRect();
+  btn.classList.add('show');
+  const bw = btn.offsetWidth, bh = btn.offsetHeight;
+  let top = rect.top - bh - 8;
+  if (top < 8) top = rect.bottom + 8;
+  let left = rect.left + rect.width / 2 - bw / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
+  btn.style.top = top + 'px';
+  btn.style.left = left + 'px';
+}
+
+document.addEventListener('selectionchange', handleSelectionChange);
+
+// Нажатие на саму кнопку не должно сначала снять выделение (обычное
+// поведение браузера на mousedown/pointerdown вне выделенного текста) —
+// иначе к моменту click текст выделения уже потерян.
+document.getElementById('selectionBtn').addEventListener('pointerdown', e => e.preventDefault());
+
+function translateSelection() {
+  const text = pendingSelectionText;
+  document.getElementById('selectionBtn').classList.remove('show');
+  window.getSelection().removeAllRanges();
+  if (text) openPanel(text);
+}
 
 function setChrome(visible) {
   chromeVisible = visible;
@@ -548,8 +839,8 @@ function wordAtPoint(x, y, map) {
   const gi = base + offset;
   const text = map.text;
   let start = gi, end = gi;
-  while (start > 0 && GREEK_RE_CHAR.test(text[start - 1])) start--;
-  while (end < text.length && GREEK_RE_CHAR.test(text[end])) end++;
+  while (start > 0 && WORD_CHAR_RE.test(text[start - 1])) start--;
+  while (end < text.length && WORD_CHAR_RE.test(text[end])) end++;
   const word = text.slice(start, end);
   return word || null;
 }
@@ -557,17 +848,23 @@ function wordAtPoint(x, y, map) {
 // ══════════════════════════════════════════════════════════════
 // ПЕРЕВОД (панель снизу)
 // ══════════════════════════════════════════════════════════════
-let currentWord = null;
+let currentText = null;
 let requestToken = 0;
 
-async function openPanel(word) {
-  currentWord = word;
-  document.getElementById('tpWord').textContent = word;
+async function openPanel(text) {
+  currentText = text;
+  const wordEl = document.getElementById('tpWord');
+  wordEl.textContent = text;
+  wordEl.classList.toggle('long', text.length > 60);
   document.getElementById('backdrop').classList.add('show');
   document.getElementById('panel').classList.add('show');
   updateSaveButton();
+  renderLangToggles();
+  await translateWord(text);
+}
 
-  const key = word.toLowerCase();
+async function translateWord(word) {
+  const key = word.toLowerCase() + '|' + sourceLang + '|' + targetLang;
   const tEl = document.getElementById('tpTranslation');
 
   if (translateCache[key]) {
@@ -581,12 +878,12 @@ async function openPanel(word) {
 
   const myToken = ++requestToken;
   try {
-    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=el&tl=ru&dt=t&q=' + encodeURIComponent(word);
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' + sourceLang + '&tl=' + targetLang + '&dt=t&q=' + encodeURIComponent(word);
     const res = await fetch(url);
     if (!res.ok) throw new Error('bad status');
     const data = await res.json();
     const translated = data[0].map(x => x[0]).join('');
-    if (myToken !== requestToken) return; // пользователь уже тапнул другое слово
+    if (myToken !== requestToken) return; // пользователь уже тапнул другое слово (или сменил язык)
     translateCache[key] = translated;
     saveTranslateCache();
     tEl.textContent = translated;
@@ -605,16 +902,16 @@ function closePanel() {
 
 function updateSaveButton() {
   const btn = document.getElementById('tpSave');
-  const already = savedWords.some(w => w.word === currentWord);
+  const already = savedWords.some(w => w.word === currentText);
   btn.textContent = already ? '✓ Сохранено' : '★ Сохранить слово';
   btn.classList.toggle('saved', already);
 }
 
 function saveCurrentWord() {
-  if (!currentWord) return;
-  if (savedWords.some(w => w.word === currentWord)) return;
+  if (!currentText) return;
+  if (savedWords.some(w => w.word === currentText)) return;
   const translation = document.getElementById('tpTranslation').textContent;
-  savedWords.push({ word: currentWord, translation, ts: Date.now() });
+  savedWords.push({ word: currentText, translation, ts: Date.now() });
   persistSavedWords();
   updateSaveButton();
 }
@@ -661,6 +958,86 @@ async function copySavedWords() {
 }
 
 // ══════════════════════════════════════════════════════════════
+// «ПРОЧИТАНО»
+// ══════════════════════════════════════════════════════════════
+async function markFinished() {
+  if (!currentBookId) return;
+  await idbUpdateBook(currentBookId, { status: 'finished' });
+  libraryShelf = 'finished';
+  showLibrary();
+}
+
+// ══════════════════════════════════════════════════════════════
+// ЗАКЛАДКИ (несколько, в любом месте книги)
+// ══════════════════════════════════════════════════════════════
+async function addBookmark() {
+  if (!currentBookId) return;
+  const book = await idbGetBook(currentBookId);
+  if (!book) return;
+  const bookmark = {
+    id: newId('bm'),
+    scrollPos: window.scrollY,
+    pageLabel: 'стр. ' + currentPageNumber() + ' из ' + (currentPages.length || book.pageCount || '?'),
+    createdAt: Date.now(),
+  };
+  const bookmarks = (book.bookmarks || []).concat(bookmark);
+  await idbUpdateBook(currentBookId, { bookmarks });
+
+  // Фиксированный ярлык на возврат (а не текущий textContent) — иначе
+  // при повторном тапе до истечения таймера залипает на «✓» навсегда.
+  const btn = document.getElementById('bookmarkBtn');
+  btn.textContent = '✓';
+  clearTimeout(bookmarkFeedbackTimer);
+  bookmarkFeedbackTimer = setTimeout(() => { btn.textContent = '🔖'; }, 900);
+}
+
+async function openBookmarks() {
+  if (!currentBookId) return;
+  closePanel();
+  showScreen('view-bookmarks');
+  await renderBookmarksList();
+}
+
+async function renderBookmarksList() {
+  const list = document.getElementById('bookmarksList');
+  list.innerHTML = '';
+  const book = currentBookId ? await idbGetBook(currentBookId) : null;
+  const marks = (book && book.bookmarks) || [];
+  if (!marks.length) {
+    list.innerHTML = '<div class="saved-empty">Пока нет закладок.<br>Нажми 🔖 во время чтения, чтобы добавить.</div>';
+    return;
+  }
+  marks.slice().reverse().forEach(bm => {
+    const row = document.createElement('div');
+    row.className = 'saved-row bookmark-row';
+    const w = document.createElement('div'); w.className = 'saved-word'; w.textContent = bm.pageLabel || 'Закладка';
+    const t = document.createElement('div'); t.className = 'saved-translation';
+    t.textContent = new Date(bm.createdAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const del = document.createElement('button');
+    del.className = 'saved-del'; del.textContent = '×'; del.type = 'button';
+    del.setAttribute('aria-label', `Удалить закладку «${bm.pageLabel}»`);
+    del.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const b = await idbGetBook(currentBookId);
+      const bookmarks = (b.bookmarks || []).filter(x => x.id !== bm.id);
+      await idbUpdateBook(currentBookId, { bookmarks });
+      renderBookmarksList();
+    });
+    row.append(w, t, del);
+    row.addEventListener('click', (ev) => {
+      if (ev.target.closest('.saved-del')) return;
+      jumpToBookmark(bm);
+    });
+    list.appendChild(row);
+  });
+}
+
+function jumpToBookmark(bm) {
+  showScreen('view-pdf');
+  requestAnimationFrame(() => window.scrollTo(0, bm.scrollPos));
+}
+
+// ══════════════════════════════════════════════════════════════
 // СТАРТ
 // ══════════════════════════════════════════════════════════════
 window.handlePdfFile = handlePdfFile;
@@ -670,13 +1047,13 @@ window.openSaved = openSaved;
 window.closePanel = closePanel;
 window.saveCurrentWord = saveCurrentWord;
 window.copySavedWords = copySavedWords;
+window.markFinished = markFinished;
+window.addBookmark = addBookmark;
+window.openBookmarks = openBookmarks;
+window.translateSelection = translateSelection;
 
 persistSavedWords(); // обновить счётчик в шапке при загрузке
-
-(async () => {
-  const opened = await openPdfFromStorage();
-  if (!opened) await renderLibrary();
-})();
+showLibrary(); // библиотека — стартовый экран (книг может быть несколько)
 </script>
 </body>
 </html>
