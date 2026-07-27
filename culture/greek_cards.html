@@ -430,6 +430,15 @@
       <div class="section-arrow">›</div>
     </button>
 
+    <button class="section-btn" onclick="showSection('books')">
+      <div class="section-icon">📖</div>
+      <div class="section-text">
+        <div class="section-name">Слова по книгам</div>
+        <div class="section-desc">Лексика прочитанных книг</div>
+      </div>
+      <div class="section-arrow">›</div>
+    </button>
+
     <button class="btn-home-screen" id="btnAddHomeScreen" onclick="addToHomeScreen()">📲 Добавить на домашний экран</button>
   </div>
 </div>
@@ -670,12 +679,26 @@
       </div>
     </div>
 
+    <div class="mastered-link-dock">
+      <button class="btn-mastered-link" onclick="openAllMastered()">★ Выученные слова</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ СТРАНИЦА: КНИГИ ══ -->
+<div class="screen" id="screen-section-books">
+  <div class="page-wrap">
+    <div class="page-top-bar">
+      <div class="page-back" onclick="showScreen('screen-main')">← Назад</div>
+      <div class="page-title">Слова по книгам</div>
+    </div>
+
     <div class="deck-card">
       <div class="deck-name">Гарри Поттер и тайная комната</div>
       <div class="deck-meta"><span class="deck-count" data-deck="hp2"></span></div>
       <div class="deck-btns">
-        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('hp2'), 1, 'screen-section-topics')">греч → рус</button>
-        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('hp2'), 'screen-section-topics')">рус → греч</button>
+        <button class="deck-btn deck-btn-lime" onclick="startSession(getTopicDeck('hp2'), 1, 'screen-section-books')">греч → рус</button>
+        <button class="deck-btn" onclick="startRound2FromSection(getTopicDeck('hp2'), 'screen-section-books')">рус → греч</button>
       </div>
     </div>
 
@@ -1100,12 +1123,13 @@ let backTarget = 'screen-section-exam';
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if (id === 'screen-section-exam' || id === 'screen-section-topics') renderDeckProgress();
+  if (id === 'screen-section-exam' || id === 'screen-section-topics' || id === 'screen-section-books') renderDeckProgress();
 }
 
 function showSection(name) {
   if (name === 'exam')   showScreen('screen-section-exam');
   if (name === 'topics') showScreen('screen-section-topics');
+  if (name === 'books')  showScreen('screen-section-books');
 }
 
 function goBack() {
