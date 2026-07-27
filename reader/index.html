@@ -532,6 +532,13 @@
   <button class="sel-btn" id="selTranslate">Перевести</button>
 </div>
 
+<div class="sel-toolbar" id="noteQuickBar">
+  <div class="sel-colors" id="noteQuickColors"></div>
+  <div class="sel-div"></div>
+  <button class="sel-btn" id="noteQuickEdit" aria-label="Комментарий"></button>
+  <button class="sel-btn" id="noteQuickDelete" aria-label="Удалить маркер"></button>
+</div>
+
 <script type="module">
 import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.min.mjs';
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
@@ -1234,10 +1241,14 @@ function offsetsFromRange(map, range) {
 // выходит рваной. Склеиваем прямоугольники одной строки (близкие top/height)
 // в один сплошной — от самого левого до самого правого края.
 function mergeLineRects(rects) {
+  // Сравнивать top/height двух обрывков напрямую ненадёжно — в реальном
+  // тексте (особенно греческом, с тонос-ударениями) соседние фрагменты одной
+  // строки у pdf.js слегка гуляют по вертикали. Вместо точного совпадения
+  // объединяем обрывки, чьи вертикальные диапазоны хоть немного пересекаются.
+  const sorted = Array.from(rects).filter(r => r.width && r.height).sort((a, b) => a.top - b.top);
   const lines = [];
-  rects.forEach(r => {
-    if (!r.width || !r.height) return;
-    let line = lines.find(l => Math.abs(l.top - r.top) < 3 && Math.abs(l.height - r.height) < 3);
+  sorted.forEach(r => {
+    const line = lines.find(l => r.top - 3 <= l.bottom && l.top - 3 <= r.bottom);
     if (!line) { lines.push({ top: r.top, bottom: r.bottom, left: r.left, right: r.right }); return; }
     line.top = Math.min(line.top, r.top);
     line.bottom = Math.max(line.bottom, r.bottom);
@@ -1289,11 +1300,13 @@ document.getElementById('pdfContainer').addEventListener('click', e => {
     const map = pdfWordMaps.get(tlayer);
     if (map) {
       const note = noteAtPoint(e.clientX, e.clientY, map);
-      if (note) { openNoteSheet(note); return; }
+      if (note) { openNoteQuickBar(note, map); return; }
+      closeNoteQuickBar();
       const word = wordAtPoint(e.clientX, e.clientY, map);
       if (word) { openPanel(word, true); return; }
     }
   }
+  closeNoteQuickBar();
   setChrome(!chromeVisible);
 });
 
@@ -1359,6 +1372,7 @@ function handleSelectionChange() {
   const sel = window.getSelection();
   const bar = document.getElementById('selToolbar');
   const text = sel && !sel.isCollapsed && sel.rangeCount ? sel.toString().trim() : '';
+  if (text) closeNoteQuickBar();
   const anchor = sel && sel.anchorNode;
   const anchorEl = anchor ? (anchor.nodeType === 1 ? anchor : anchor.parentElement) : null;
   const tlayer = anchorEl && anchorEl.closest ? anchorEl.closest('.textLayer') : null;
@@ -1378,11 +1392,10 @@ function handleSelectionChange() {
 }
 document.addEventListener('selectionchange', handleSelectionChange);
 
-function positionSelToolbar() {
-  const sel = window.getSelection();
-  if (!pendingSelection || !sel || sel.isCollapsed || !sel.rangeCount) return;
-  const bar = document.getElementById('selToolbar');
-  const rect = sel.getRangeAt(0).getBoundingClientRect();
+// Общая логика позиционирования плавающей панели (над выделением/маркером,
+// с переносом вниз, если сверху не хватает места) — используется и для
+// панели выделения, и для быстрой панели маркера.
+function positionFloatingBar(bar, rect) {
   bar.classList.add('show');
   const bw = bar.offsetWidth, bh = bar.offsetHeight;
   let top = rect.top - bh - 10;
@@ -1392,12 +1405,19 @@ function positionSelToolbar() {
   bar.style.top = top + 'px';
   bar.style.left = left + 'px';
 }
+
+function positionSelToolbar() {
+  const sel = window.getSelection();
+  if (!pendingSelection || !sel || sel.isCollapsed || !sel.rangeCount) return;
+  positionFloatingBar(document.getElementById('selToolbar'), sel.getRangeAt(0).getBoundingClientRect());
+}
 document.addEventListener('pointerup', () => requestAnimationFrame(positionSelToolbar));
 
 // Нажатие на панель не должно сначала снять выделение (обычное поведение
 // браузера на pointerdown вне выделенного текста) — иначе к моменту click
 // текст выделения уже потерян.
 document.getElementById('selToolbar').addEventListener('pointerdown', e => e.preventDefault());
+document.getElementById('noteQuickBar').addEventListener('pointerdown', e => e.preventDefault());
 
 function renderSelColors() {
   const box = document.getElementById('selColors');
@@ -1443,6 +1463,60 @@ function translateSelection() {
 // ЗАМЕТКА К ВЫДЕЛЕНИЮ
 // ══════════════════════════════════════════════════════════════
 let editingNote = null;
+let quickBarNote = null; // {note, map} — какой маркер сейчас показан в быстрой панели
+
+function closeNoteQuickBar() {
+  document.getElementById('noteQuickBar').classList.remove('show');
+  quickBarNote = null;
+}
+
+// Тап по уже существующему маркеру — быстрая панель прямо на месте
+// (сменить цвет, удалить одним тапом, открыть комментарий), а не тяжёлая
+// шторка снизу.
+function openNoteQuickBar(note, map) {
+  quickBarNote = { note, map };
+  const colors = document.getElementById('noteQuickColors');
+  colors.innerHTML = '';
+  HL_COLORS.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'sel-color';
+    b.type = 'button';
+    b.style.background = c.hex;
+    b.style.borderColor = c.code === note.color ? 'var(--text)' : 'transparent';
+    b.setAttribute('aria-label', 'Изменить цвет маркера');
+    b.addEventListener('click', async () => {
+      note.color = c.code;
+      const notes = (currentBook.notes || []).map(n => n.id === note.id ? note : n);
+      currentBook.notes = notes;
+      await idbUpdateBook(currentBookId, { notes });
+      redrawAllHighlights();
+      openNoteQuickBar(note, map);
+    });
+    colors.append(b);
+  });
+  document.getElementById('noteQuickEdit').innerHTML = icon('note');
+  document.getElementById('noteQuickDelete').innerHTML = icon('trash');
+
+  const range = rangeFromOffsets(map, note.startOffset, note.endOffset);
+  const rect = range ? range.getBoundingClientRect() : map.wrap.getBoundingClientRect();
+  positionFloatingBar(document.getElementById('noteQuickBar'), rect);
+}
+
+document.getElementById('noteQuickEdit').addEventListener('click', () => {
+  if (!quickBarNote) return;
+  const { note } = quickBarNote;
+  closeNoteQuickBar();
+  openNoteSheet(note);
+});
+document.getElementById('noteQuickDelete').addEventListener('click', async () => {
+  if (!quickBarNote) return;
+  const { note, map } = quickBarNote;
+  const rest = (currentBook.notes || []).filter(n => n.id !== note.id);
+  currentBook.notes = rest;
+  await idbUpdateBook(currentBookId, { notes: rest });
+  closeNoteQuickBar();
+  drawHighlights(map);
+});
 
 function openNoteSheet(note) {
   editingNote = note;
@@ -1829,6 +1903,7 @@ function openSheet(id) {
 function closeAllSheets() {
   document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show'));
   document.getElementById('backdrop').classList.remove('show');
+  closeNoteQuickBar();
 }
 
 // ══════════════════════════════════════════════════════════════
