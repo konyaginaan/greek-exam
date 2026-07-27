@@ -8,13 +8,36 @@
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   :root {
-    --lime: #AADD00;
-    --lime-dark: #8ab800;
-    --bg: #F0EDE8;
-    --surface: #ffffff;
-    --text: #1A1A1A;
-    --muted: #888888;
-    --border: #e4e2d8;
+    --accent: #6F8C5A;
+    --accent-soft: #E6EBDF;
+    --bg: #F4F1EA;
+    --surface: #FFFDF9;
+    --surface-2: #EFEBE1;
+    --text: #2C2A26;
+    --muted: #8A857B;
+    --border: #E2DCCF;
+    --shadow: rgba(60,50,35,0.10);
+    --page-filter: none;
+  }
+  :root[data-theme="sepia"] {
+    --bg: #EFE4D0;
+    --surface: #F8EFDD;
+    --surface-2: #E7DAC2;
+    --text: #3A3125;
+    --muted: #8A7A60;
+    --border: #DCCDB0;
+    --shadow: rgba(90,70,40,0.12);
+    --page-filter: sepia(0.22) brightness(0.99);
+  }
+  :root[data-theme="dark"] {
+    --bg: #17171A;
+    --surface: #212126;
+    --surface-2: #2B2B31;
+    --text: #ECEAE4;
+    --muted: #928E86;
+    --border: #34343B;
+    --shadow: rgba(0,0,0,0.4);
+    --page-filter: invert(0.9) hue-rotate(180deg);
   }
 
   html, body { height: 100%; }
@@ -23,292 +46,455 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding: 0 1rem;
     max-width: 640px;
     margin: 0 auto;
+    transition: background 0.2s ease, color 0.2s ease;
   }
 
-  .screen { display: none; flex-direction: column; min-height: 100vh; }
+  .screen { display: none; flex-direction: column; min-height: 100vh; padding: 0 1rem; }
   .screen.active { display: flex; }
+  .screen.with-nav { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 76px); }
+
+  .icon { width: 20px; height: 20px; display: block; flex-shrink: 0; }
+  .icon-sm { width: 17px; height: 17px; }
 
   .btn-link {
-    background: none; border: none; cursor: pointer;
-    font-size: 12px; font-weight: 700; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.06em;
-    white-space: nowrap;
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    display: flex; align-items: center; justify-content: center; padding: 6px;
+    border-radius: 10px;
   }
-  .btn-link:active { opacity: 0.6; }
+  .btn-link:active { opacity: 0.55; }
+
+  /* ══════════════ ШАПКИ ЭКРАНОВ ══════════════ */
+  .top {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: calc(env(safe-area-inset-top, 0px) + 18px) 0 10px;
+  }
+  .title { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+  .title em { font-style: normal; color: var(--accent); }
+  .screen-title { font-size: 20px; font-weight: 800; }
+
+  /* ══════════════ ПОИСК И ФИЛЬТРЫ ══════════════ */
+  .search-wrap { position: relative; margin-bottom: 12px; }
+  .search-wrap .search-icon {
+    position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); pointer-events: none;
+  }
+  .search-input {
+    width: 100%; padding: 12px 14px 12px 42px;
+    border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface); color: var(--text);
+    font-size: 15px; font-family: inherit; outline: none;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--accent); }
+
+  .chips {
+    display: flex; gap: 7px; overflow-x: auto; padding-bottom: 14px;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    border: none; border-radius: 20px; padding: 8px 14px; white-space: nowrap;
+    font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer;
+    background: var(--surface-2); color: var(--muted); flex-shrink: 0;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .chip.active { background: var(--accent); color: #fff; }
+  .chip-count {
+    font-size: 11px; opacity: 0.75; font-weight: 700;
+  }
 
   /* ══════════════ БИБЛИОТЕКА ══════════════ */
-  #view-library { padding-bottom: 32px; }
-  .lib-top {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 20px 0 8px;
+  .book-list { display: flex; flex-direction: column; gap: 10px; }
+  .book-card {
+    background: var(--surface); border-radius: 16px;
+    padding: 12px; display: flex; align-items: center; gap: 13px;
+    box-shadow: 0 2px 12px var(--shadow);
   }
-  .title { font-size: 20px; font-weight: 800; }
-  .title em {
-    font-style: normal; background: var(--lime);
-    padding: 1px 6px; border-radius: 6px;
+  .book-open {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 13px;
+    background: none; border: none; cursor: pointer; text-align: left;
+    padding: 0; font-family: inherit; color: inherit;
   }
+  .book-open:active { opacity: 0.7; }
+  .cover {
+    width: 56px; height: 76px; flex-shrink: 0; border-radius: 5px;
+    overflow: hidden; background: var(--surface-2);
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  .cover img, .cover svg { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .book-info { min-width: 0; flex: 1; }
+  .book-name {
+    font-weight: 700; font-size: 15px; line-height: 1.3; word-break: break-word;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .book-author { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .book-progress-row { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+  .progress-track { flex: 1; height: 4px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+  .book-meta { font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .book-badges { display: flex; gap: 4px; margin-left: auto; }
+  .book-badges .icon-sm { color: var(--accent); }
 
-  /* Пустая библиотека: по центру, крупная кнопка — открыть файл можно
-     только явным тапом по кнопке, никакого перетаскивания (на телефоне
-     drag-and-drop всё равно не работает). */
-  .lib-empty {
+  .empty {
     flex: 1; display: flex; flex-direction: column;
     align-items: center; justify-content: center; text-align: center;
-    gap: 10px; padding: 2rem 1rem;
+    gap: 8px; padding: 3rem 1rem; color: var(--muted); font-size: 14px; line-height: 1.55;
   }
-  .lib-empty-icon { font-size: 56px; margin-bottom: 6px; }
-  .lib-empty-title { font-size: 19px; font-weight: 800; }
-  .lib-empty-sub { font-size: 14px; color: var(--muted); line-height: 1.5; max-width: 26em; }
+  .empty-icon { color: var(--border); margin-bottom: 4px; }
+  .empty-icon .icon { width: 48px; height: 48px; }
+  .empty-title { font-size: 18px; font-weight: 800; color: var(--text); }
+
   .btn-primary {
-    margin-top: 12px;
-    padding: 15px 32px; border: none; border-radius: 14px;
-    font-size: 15px; font-weight: 800;
-    background: var(--lime); color: var(--text);
-    cursor: pointer; width: 100%; max-width: 320px;
+    margin-top: 14px; padding: 14px 30px; border: none; border-radius: 14px;
+    font-size: 15px; font-weight: 700; font-family: inherit;
+    background: var(--accent); color: #fff; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   }
   .btn-primary:active { opacity: 0.85; }
-
   .btn-outline {
-    padding: 12px 24px; border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 12px 22px; border: 1.5px solid var(--border); border-radius: 13px;
     background: none; color: var(--muted); font-size: 13px; font-weight: 700;
-    cursor: pointer;
+    font-family: inherit; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
   }
   .btn-outline:active { opacity: 0.6; }
-
-  /* Библиотека из нескольких книг: полки «Читаю»/«Прочитано» + список карточек. */
-  .lib-shelf-tabs { display: flex; gap: 6px; padding: 4px 0 14px; }
-  .book-list { display: flex; flex-direction: column; gap: 8px; }
-  .book-card {
-    background: var(--surface); border-radius: 12px;
-    padding: 0.7rem 0.9rem; display: flex; align-items: center; gap: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  }
-  .book-card-open {
-    flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px;
-    background: none; border: none; cursor: pointer; text-align: left; padding: 0;
-  }
-  .book-card-icon { font-size: 28px; flex-shrink: 0; }
-  .book-card-info { min-width: 0; }
-  .book-card-name { font-weight: 700; word-break: break-word; line-height: 1.3; }
-  .book-card-progress { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .lib-add-row { padding-top: 6px; text-align: center; }
+  .add-row { padding: 16px 0 8px; text-align: center; }
 
   #pdfFileInput { display: none; }
 
+  /* ══════════════ НИЖНЯЯ НАВИГАЦИЯ ══════════════ */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+    max-width: 640px; margin: 0 auto;
+    display: none; justify-content: space-around; align-items: stretch;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .tabbar.show { display: flex; }
+  .tab {
+    flex: 1; background: none; border: none; cursor: pointer; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 10px 4px 8px; color: var(--muted); font-size: 10px; font-weight: 700;
+  }
+  .tab.active { color: var(--accent); }
+
   /* ══════════════ ЧТЕНИЕ ══════════════ */
   #view-pdf { padding: 0; }
-  #pdfContainer { display: flex; flex-direction: column; padding: 64px 1rem 48px; }
-  .pdf-page { position: relative; margin: 0 auto 14px; background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; }
-  .pdf-page canvas { display: block; width: 100%; height: 100%; }
+  #pdfContainer { display: flex; flex-direction: column; padding: 68px 1rem 48px; }
+  .pdf-page {
+    position: relative; margin: 0 auto 14px; background: #fff;
+    box-shadow: 0 2px 14px var(--shadow); border-radius: 4px; overflow: hidden;
+    filter: var(--page-filter);
+  }
+  .pdf-page canvas { display: block; width: 100%; height: 100%; position: relative; z-index: 0; }
   .pdf-page-loading {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     color: var(--muted); font-size: 13px;
   }
+  .highlight-layer { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .hl-rect { position: absolute; border-radius: 2px; }
   /* Официальные правила pdf.js для текстового слоя — без них слой либо
      виден поверх картинки, либо не совпадает по размеру с глифами. */
   .textLayer {
     position: absolute; inset: 0; overflow: hidden;
     line-height: 1; text-align: initial; forced-color-adjust: none;
-    transform-origin: 0 0; z-index: 1;
+    transform-origin: 0 0; z-index: 2;
   }
   .textLayer span, .textLayer br {
     color: transparent; position: absolute; white-space: pre;
     cursor: pointer; transform-origin: 0% 0%;
   }
-  .textLayer ::selection { background: rgba(170,221,0,0.35); }
+  .textLayer ::selection { background: color-mix(in srgb, var(--accent) 32%, transparent); }
 
-  /* Верхняя и нижняя панель читалки — полупрозрачные, скрываются по тапу
-     по странице (как в iBooks): страница занимает весь экран, чтение
-     ничем не перегружено, чтобы вызвать панель — один тап по пустому месту. */
   .reader-chrome {
-    position: fixed; left: 0; right: 0; top: 0;
+    position: fixed; left: 0; right: 0; top: 0; z-index: 30;
     max-width: 640px; margin: 0 auto;
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: calc(env(safe-area-inset-top, 0px) + 14px) 1rem 14px;
-    background: rgba(240,237,232,0.88);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-    z-index: 30;
-    opacity: 1; transform: translateY(0);
+    display: flex; align-items: center; gap: 4px;
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) 0.75rem 12px;
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
     transition: opacity 0.2s ease, transform 0.2s ease;
   }
   .reader-chrome.hidden { opacity: 0; transform: translateY(-100%); pointer-events: none; }
-  .chrome-back {
-    background: none; border: none; cursor: pointer;
-    font-size: 13px; font-weight: 700; color: var(--text);
-    flex-shrink: 0;
-  }
-  .chrome-back:active { opacity: 0.6; }
   .chrome-title {
     flex: 1; min-width: 0; text-align: center;
     font-size: 13px; font-weight: 700; color: var(--muted);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .chrome-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .chrome-btn { background: none; border: none; cursor: pointer; color: var(--text); padding: 7px; border-radius: 10px; display: flex; }
+  .chrome-btn:active { background: var(--surface-2); }
+  .chrome-btn.on { color: var(--accent); }
 
   .page-indicator {
-    position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
-    background: rgba(26,26,26,0.75); color: #fff;
-    font-size: 12px; font-weight: 600;
-    padding: 5px 12px; border-radius: 20px;
+    position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+    background: color-mix(in srgb, var(--text) 78%, transparent); color: var(--bg);
+    font-size: 12px; font-weight: 700;
+    padding: 6px 13px; border-radius: 20px;
     z-index: 30; pointer-events: none;
-    opacity: 1; transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease;
   }
   .page-indicator.hidden { opacity: 0; }
 
-  /* Плавающая кнопка над выделенным текстом (слово/фраза/абзац) — единственный
-     способ вызвать перевод выделения, нативное контекстное меню не трогаем. */
-  .selection-translate-btn {
-    position: fixed; z-index: 45; display: none;
-    background: rgba(26,26,26,0.92); color: #fff; border: none;
-    padding: 8px 16px; border-radius: 20px;
-    font-size: 13px; font-weight: 700; cursor: pointer;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  /* ══════════════ ПАНЕЛЬ НАД ВЫДЕЛЕНИЕМ ══════════════ */
+  .sel-toolbar {
+    position: fixed; z-index: 45; display: none; align-items: center; gap: 4px;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 6px; border-radius: 16px;
+    box-shadow: 0 6px 20px var(--shadow);
   }
-  .selection-translate-btn.show { display: block; }
+  .sel-toolbar.show { display: flex; }
+  .sel-colors { display: flex; gap: 4px; }
+  .sel-color {
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent;
+    cursor: pointer; padding: 0;
+  }
+  .sel-color:active { transform: scale(0.9); }
+  .sel-div { width: 1px; height: 22px; background: var(--border); margin: 0 3px; }
+  .sel-btn {
+    background: none; border: none; cursor: pointer; font-family: inherit;
+    font-size: 13px; font-weight: 700; color: var(--text);
+    padding: 6px 10px; border-radius: 10px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .sel-btn:active { background: var(--surface-2); }
 
-  /* ══════════════ ПЕРЕВОД (панель снизу) ══════════════ */
-  .translate-panel {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    max-width: 640px; margin: 0 auto;
-    background: var(--surface);
-    border-radius: 20px 20px 0 0;
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
-    padding: 1.25rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
-    max-height: 70vh; overflow-y: auto;
-    transform: translateY(110%);
-    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
-    z-index: 50;
-  }
-  .translate-panel.show { transform: translateY(0); }
-  .tp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-  .tp-word { font-size: 24px; font-weight: 800; word-break: break-word; }
-  /* Панель переводит не только слово, но и выделенную фразу/абзац —
-     для длинного текста заголовок не должен выглядеть гигантским. */
-  .tp-word.long { font-size: 15px; font-weight: 600; line-height: 1.45; }
-  .tp-close {
-    background: var(--bg); border: none; border-radius: 50%;
-    width: 32px; height: 32px; flex-shrink: 0;
-    font-size: 16px; color: var(--muted); cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .tp-lang-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .tp-lang-label { font-size: 12px; color: var(--muted); font-weight: 700; width: 48px; flex-shrink: 0; }
-  .tp-langs { display: flex; gap: 6px; }
-  .tp-lang-btn {
-    border: none; border-radius: 20px; padding: 5px 12px;
-    font-size: 12px; font-weight: 700; cursor: pointer;
-    background: var(--bg); color: var(--muted);
-  }
-  .tp-lang-btn.active { background: var(--lime); color: var(--text); }
-  .tp-translation { font-size: 18px; color: var(--text); min-height: 27px; margin-bottom: 14px; }
-  .tp-translation.loading { color: var(--muted); font-style: italic; }
-  .tp-translation.error { color: #CC3366; }
-  .tp-save {
-    width: 100%; padding: 12px; border: none; border-radius: 12px;
-    font-size: 14px; font-weight: 700; cursor: pointer;
-    background: var(--bg); color: var(--text);
-  }
-  .tp-save.saved { background: var(--lime-dark); color: #fff; }
-  .tp-save:active { opacity: 0.8; }
-
+  /* ══════════════ НИЖНИЕ ШТОРКИ ══════════════ */
   .backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.15);
+    position: fixed; inset: 0; background: rgba(0,0,0,0.25);
     opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 40;
   }
   .backdrop.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    max-width: 640px; margin: 0 auto;
+    background: var(--surface);
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -4px 26px var(--shadow);
+    padding: 1.15rem 1.15rem calc(env(safe-area-inset-bottom, 0px) + 1.15rem);
+    max-height: 78vh; overflow-y: auto;
+    transform: translateY(110%);
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+  }
+  .sheet.show { transform: translateY(0); }
+  .sheet-grip {
+    width: 38px; height: 4px; border-radius: 3px; background: var(--border);
+    margin: -4px auto 14px;
+  }
 
-  /* ══════════════ СОХРАНЁННЫЕ СЛОВА ══════════════ */
-  #view-saved { padding-bottom: 32px; gap: 14px; }
-  .saved-top {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 20px 0 8px;
-  }
-  .saved-actions { display: flex; gap: 10px; }
-  .btn-secondary {
-    flex: 1; padding: 12px; border: none; border-radius: 12px;
-    font-size: 13px; font-weight: 700; cursor: pointer;
-    background: var(--surface); color: var(--text);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  }
-  .btn-secondary:active { opacity: 0.8; }
-  .saved-list { display: flex; flex-direction: column; }
-  .saved-row {
-    background: var(--surface); border-radius: 12px;
-    padding: 0.8rem 1rem; margin-bottom: 8px;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .saved-word { font-weight: 700; flex: 1; min-width: 0; word-break: break-word; }
-  .saved-translation { color: var(--muted); font-size: 14px; flex: 1; min-width: 0; word-break: break-word; }
-  .saved-del {
-    background: none; border: none; cursor: pointer;
-    width: 36px; height: 36px; border-radius: 9px;
-    font-size: 17px; color: var(--muted); flex-shrink: 0;
+  /* перевод */
+  .tp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .tp-word { font-size: 23px; font-weight: 800; word-break: break-word; line-height: 1.25; }
+  .tp-word.long { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .tp-close {
+    background: var(--surface-2); border: none; border-radius: 50%;
+    width: 30px; height: 30px; flex-shrink: 0; color: var(--muted); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
-  .saved-del:active { background: #FFD6E0; color: #CC3366; }
-  .bookmark-row { cursor: pointer; }
-  .bookmark-row:active { opacity: 0.85; }
-  .saved-empty { text-align: center; color: var(--muted); font-size: 14px; padding: 3rem 1rem; line-height: 1.6; }
-  .copy-feedback { text-align: center; font-size: 13px; color: var(--lime-dark); font-weight: 700; height: 18px; }
+  .tp-lang-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .tp-lang-label { font-size: 12px; color: var(--muted); font-weight: 700; width: 52px; flex-shrink: 0; }
+  .tp-langs { display: flex; gap: 5px; flex-wrap: wrap; }
+  .tp-lang-btn {
+    border: none; border-radius: 20px; padding: 5px 11px;
+    font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+    background: var(--surface-2); color: var(--muted);
+  }
+  .tp-lang-btn.active { background: var(--accent); color: #fff; }
+  .tp-translation { font-size: 17px; line-height: 1.5; min-height: 26px; margin: 12px 0 14px; }
+  .tp-translation.loading { color: var(--muted); font-style: italic; }
+  .tp-translation.error { color: #C1554F; }
+  .btn-wide {
+    width: 100%; padding: 13px; border: none; border-radius: 13px;
+    font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
+    background: var(--surface-2); color: var(--text);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-wide.done { background: var(--accent); color: #fff; }
+  .btn-wide:active { opacity: 0.8; }
+
+  /* меню книги */
+  .sheet-book-top { display: flex; gap: 14px; align-items: center; margin-bottom: 6px; }
+  .sheet-book-top .cover { width: 62px; height: 84px; }
+  .menu-item {
+    width: 100%; background: none; border: none; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; gap: 13px;
+    padding: 14px 4px; font-size: 15px; color: var(--text); text-align: left;
+    border-top: 1px solid var(--border);
+  }
+  .menu-item:active { background: var(--surface-2); }
+  .menu-item .icon { color: var(--muted); }
+  .menu-item.on { color: var(--accent); font-weight: 700; }
+  .menu-item.on .icon { color: var(--accent); }
+  .menu-item.danger { color: #C1554F; }
+  .menu-item.danger .icon { color: #C1554F; }
+
+  /* заметка */
+  .note-quote {
+    background: var(--surface-2); border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0; padding: 11px 13px; font-size: 14px;
+    line-height: 1.5; margin-bottom: 14px; max-height: 130px; overflow-y: auto;
+  }
+  .note-input {
+    width: 100%; min-height: 90px; resize: vertical;
+    border: 1px solid var(--border); border-radius: 13px;
+    background: var(--bg); color: var(--text);
+    padding: 12px; font-size: 15px; font-family: inherit; outline: none;
+    margin-bottom: 12px;
+  }
+  .note-input:focus { border-color: var(--accent); }
+  .sheet-actions { display: flex; gap: 9px; }
+
+  /* ══════════════ СПИСКИ (закладки, заметки, слова) ══════════════ */
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    background: var(--surface); border-radius: 14px;
+    padding: 13px 14px; display: flex; align-items: flex-start; gap: 11px;
+    box-shadow: 0 1px 8px var(--shadow);
+  }
+  .row-main { flex: 1; min-width: 0; cursor: pointer; }
+  .row-title { font-weight: 700; font-size: 15px; word-break: break-word; line-height: 1.35; }
+  .row-sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .row-quote {
+    font-size: 14px; line-height: 1.5; margin-top: 2px; word-break: break-word;
+    border-left: 3px solid var(--accent); padding-left: 10px;
+  }
+  .row-note { font-size: 13px; color: var(--muted); margin-top: 7px; line-height: 1.45; font-style: italic; }
+  .row-del {
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    padding: 6px; border-radius: 9px; flex-shrink: 0; display: flex;
+  }
+  .row-del:active { background: var(--surface-2); color: #C1554F; }
+  .section-label {
+    font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.05em; padding: 14px 2px 2px;
+  }
+  .copy-feedback { text-align: center; font-size: 13px; color: var(--accent); font-weight: 700; height: 18px; margin-top: 8px; }
+
+  /* ══════════════ НАСТРОЙКИ ══════════════ */
+  .set-group { margin-bottom: 22px; }
+  .set-label { font-size: 13px; font-weight: 800; color: var(--muted); margin-bottom: 10px; }
+  .theme-row { display: flex; gap: 10px; }
+  .theme-card {
+    flex: 1; border: 2px solid var(--border); border-radius: 14px; cursor: pointer;
+    padding: 0; overflow: hidden; background: none; font-family: inherit;
+  }
+  .theme-card.active { border-color: var(--accent); }
+  .theme-swatch { height: 62px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; }
+  .theme-name { font-size: 12px; font-weight: 700; padding: 8px 4px; color: var(--text); background: var(--surface); }
+  .accent-row { display: flex; gap: 12px; }
+  .accent-dot {
+    width: 34px; height: 34px; border-radius: 50%; border: 3px solid transparent;
+    cursor: pointer; padding: 0;
+  }
+  .accent-dot.active { border-color: var(--text); }
+  .size-row { display: flex; align-items: center; gap: 12px; }
+  .size-btn {
+    width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-size: 17px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+  }
+  .size-btn:active { background: var(--surface-2); }
+  .size-value { flex: 1; text-align: center; font-size: 15px; font-weight: 700; }
+  .slider { width: 100%; accent-color: var(--accent); }
+  .set-hint { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 8px; }
 </style>
 </head>
 <body>
 
-<div class="screen active" id="view-library">
-  <div class="lib-top">
+<!-- ═════════ БИБЛИОТЕКА ═════════ -->
+<div class="screen active with-nav" id="view-library">
+  <div class="top">
     <div class="title">Greek <em>Reader</em></div>
-    <button class="btn-link" onclick="openSaved()">Слова (<span id="savedCount">0</span>)</button>
+    <button class="btn-link" id="addBookBtn" aria-label="Добавить книгу"></button>
   </div>
+  <div class="search-wrap">
+    <span class="search-icon" id="searchIcon"></span>
+    <input class="search-input" id="searchInput" type="search" placeholder="Поиск по названию или автору" autocomplete="off">
+  </div>
+  <div class="chips" id="filterChips"></div>
   <div id="libraryBody"></div>
-  <input type="file" id="pdfFileInput" accept="application/pdf" onchange="handlePdfFile(this.files[0])">
+  <input type="file" id="pdfFileInput" accept="application/pdf">
 </div>
 
+<!-- ═════════ ЧТЕНИЕ ═════════ -->
 <div class="screen" id="view-pdf">
   <div class="reader-chrome" id="readerChrome">
-    <button class="chrome-back" onclick="showLibrary()">‹ Библиотека</button>
+    <button class="chrome-btn" id="chromeBack" aria-label="Назад в библиотеку"></button>
     <div class="chrome-title" id="chromeTitle"></div>
-    <div class="chrome-actions">
-      <button class="btn-link" id="bookmarkBtn" onclick="addBookmark()" aria-label="Добавить закладку">🔖</button>
-      <button class="btn-link" onclick="openBookmarks()">Закладки</button>
-      <button class="btn-link" onclick="openSaved()">Слова</button>
-      <button class="btn-link" onclick="markFinished()" aria-label="Отметить прочитанной">✓</button>
-    </div>
+    <button class="chrome-btn" id="chromeBookmark" aria-label="Добавить закладку"></button>
+    <button class="chrome-btn" id="chromeMenu" aria-label="Меню книги"></button>
   </div>
   <div id="pdfContainer"></div>
   <div class="page-indicator" id="pageIndicator"></div>
 </div>
 
-<div class="screen" id="view-saved">
-  <div class="saved-top">
-    <div class="title">Greek <em>Reader</em></div>
-    <button class="btn-link" onclick="showLibrary()">Библиотека</button>
-  </div>
-  <div class="saved-actions">
-    <button class="btn-secondary" onclick="copySavedWords()">Скопировать список</button>
-  </div>
-  <div class="copy-feedback" id="copyFeedback"></div>
-  <div class="saved-list" id="savedList"></div>
+<!-- ═════════ ЗАКЛАДКИ ═════════ -->
+<div class="screen with-nav" id="view-bookmarks">
+  <div class="top"><div class="screen-title">Закладки</div></div>
+  <div class="list" id="bookmarksList"></div>
 </div>
 
-<div class="screen" id="view-bookmarks">
-  <div class="saved-top">
-    <div class="title">Greek <em>Reader</em></div>
-    <button class="btn-link" onclick="showLibrary()">Библиотека</button>
+<!-- ═════════ ЗАМЕТКИ ═════════ -->
+<div class="screen with-nav" id="view-notes">
+  <div class="top">
+    <div class="screen-title">Заметки</div>
+    <button class="btn-link" id="notesTabSwitch" style="font-size:12px;font-weight:700;">СЛОВА</button>
   </div>
-  <div class="saved-list" id="bookmarksList"></div>
+  <div class="chips" id="notesChips"></div>
+  <div id="notesBody"></div>
 </div>
 
-<button class="selection-translate-btn" id="selectionBtn" type="button" onclick="translateSelection()">Перевести</button>
+<!-- ═════════ НАСТРОЙКИ ═════════ -->
+<div class="screen with-nav" id="view-settings">
+  <div class="top"><div class="screen-title">Настройки</div></div>
 
-<div class="backdrop" id="backdrop" onclick="closePanel()"></div>
-<div class="translate-panel" id="panel">
+  <div class="set-group">
+    <div class="set-label">Оформление</div>
+    <div class="theme-row" id="themeRow"></div>
+  </div>
+
+  <div class="set-group">
+    <div class="set-label">Акцентный цвет</div>
+    <div class="accent-row" id="accentRow"></div>
+  </div>
+
+  <div class="set-group">
+    <div class="set-label">Масштаб страницы</div>
+    <div class="size-row">
+      <button class="size-btn" id="zoomMinus">A−</button>
+      <div class="size-value" id="zoomValue">100%</div>
+      <button class="size-btn" id="zoomPlus">A+</button>
+    </div>
+    <div class="set-hint">Страницы PDF — это изображения, поэтому шрифт в книге поменять нельзя: масштаб увеличивает саму страницу.</div>
+  </div>
+
+  <div class="set-group">
+    <div class="set-label">Яркость страницы</div>
+    <input class="slider" id="brightnessSlider" type="range" min="55" max="100" step="5">
+  </div>
+
+  <div class="set-group">
+    <div class="set-label">Язык перевода</div>
+    <div class="tp-langs" id="setTargetLangs"></div>
+    <div class="set-hint">Язык книги определяется для каждой книги отдельно — его можно поменять в панели перевода.</div>
+  </div>
+</div>
+
+<!-- ═════════ НИЖНЯЯ НАВИГАЦИЯ ═════════ -->
+<div class="tabbar" id="tabbar"></div>
+
+<!-- ═════════ ШТОРКИ ═════════ -->
+<div class="backdrop" id="backdrop"></div>
+
+<div class="sheet" id="panel">
+  <div class="sheet-grip"></div>
   <div class="tp-top">
     <div class="tp-word" id="tpWord"></div>
-    <button class="tp-close" onclick="closePanel()">×</button>
+    <button class="tp-close" id="tpClose" aria-label="Закрыть"></button>
   </div>
   <div class="tp-lang-row">
     <span class="tp-lang-label">Книга</span>
@@ -319,7 +505,29 @@
     <div class="tp-langs" id="tpTargetLangs"></div>
   </div>
   <div class="tp-translation" id="tpTranslation"></div>
-  <button class="tp-save" id="tpSave" onclick="saveCurrentWord()">★ Сохранить слово</button>
+  <button class="btn-wide" id="tpSave"></button>
+</div>
+
+<div class="sheet" id="bookSheet">
+  <div class="sheet-grip"></div>
+  <div id="bookSheetBody"></div>
+</div>
+
+<div class="sheet" id="noteSheet">
+  <div class="sheet-grip"></div>
+  <div class="note-quote" id="noteQuote"></div>
+  <div class="sel-colors" id="noteColors" style="margin-bottom:14px;"></div>
+  <textarea class="note-input" id="noteInput" placeholder="Комментарий к выделенному (необязательно)"></textarea>
+  <div class="sheet-actions">
+    <button class="btn-wide" id="noteDelete"></button>
+    <button class="btn-wide done" id="noteSave">Сохранить</button>
+  </div>
+</div>
+
+<div class="sel-toolbar" id="selToolbar">
+  <div class="sel-colors" id="selColors"></div>
+  <div class="sel-div"></div>
+  <button class="sel-btn" id="selTranslate">Перевести</button>
 </div>
 
 <script type="module">
@@ -327,21 +535,52 @@ import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
 
 // ══════════════════════════════════════════════════════════════
+// ИКОНКИ (инлайновый SVG — единый набор вместо эмодзи)
+// ══════════════════════════════════════════════════════════════
+const S = (p, extra = '') => `<svg class="icon${extra}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const ICONS = {
+  book: '<path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6.5A2.5 2.5 0 0 1 4 18.5v1Z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H19"/>',
+  bookmark: '<path d="M18 21l-6-4.5L6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16Z"/>',
+  bookmarkFill: '<path d="M18 21l-6-4.5L6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16Z" fill="currentColor"/>',
+  heart: '<path d="M19.5 12.6 12 20l-7.5-7.4A4.6 4.6 0 0 1 12 6.5a4.6 4.6 0 0 1 7.5 6.1Z"/>',
+  heartFill: '<path d="M19.5 12.6 12 20l-7.5-7.4A4.6 4.6 0 0 1 12 6.5a4.6 4.6 0 0 1 7.5 6.1Z" fill="currentColor"/>',
+  note: '<path d="M12 20H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v6"/><path d="M20.4 13.6a1.9 1.9 0 0 1 0 2.7L16 20.7l-3 .7.7-3 4.4-4.4a1.9 1.9 0 0 1 2.7 0Z"/>',
+  archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.1a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9 2 2 0 1 1 0 4 1.7 1.7 0 0 0-1.5 1Z"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  more: '<circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/>',
+  trash: '<path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7"/>',
+  check: '<path d="m5 13 4 4L19 7"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  back: '<path d="m15 5-7 7 7 7"/>',
+  close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  star: '<path d="m12 4 2.4 5 5.6.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.6-.8L12 4Z"/>',
+  reading: '<path d="M12 7v13"/><path d="M4 5.5A18 18 0 0 1 12 7a18 18 0 0 1 8-1.5v13A18 18 0 0 0 12 20a18 18 0 0 0-8-1.5v-13Z"/>',
+  want: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h9"/>',
+};
+const icon = (name, cls = '') => S(ICONS[name], cls ? ' ' + cls : '');
+
+// ══════════════════════════════════════════════════════════════
 // ХРАНИЛИЩЕ
 // ══════════════════════════════════════════════════════════════
-// Старый однокнижный ключ (v1) — нужен только для миграции при апгрейде БД.
-const STORAGE_SCROLL_PDF = 'reader_pdf_scroll_v1';
 const STORAGE_CACHE = 'reader_translate_cache_v1';
 const STORAGE_SAVED = 'reader_saved_words_v1';
+const STORAGE_SOURCE_LANG = 'reader_source_lang_v1';
+const STORAGE_TARGET_LANG = 'reader_target_lang_v1';
+const STORAGE_THEME = 'reader_theme_v1';
+const STORAGE_ACCENT = 'reader_accent_v1';
+const STORAGE_ZOOM = 'reader_zoom_v1';
+const STORAGE_BRIGHTNESS = 'reader_brightness_v1';
 
 const IDB_NAME = 'greek_reader_db';
-const IDB_VERSION = 2;
+const IDB_VERSION = 3;
 const IDB_STORE_BOOKS = 'books';
-const IDB_STORE_OLD = 'files'; // v1: один файл под ключом 'currentBook'
+const IDB_STORE_OLD = 'files';
 const IDB_OLD_KEY = 'currentBook';
 
-function newId(prefix) {
-  return crypto.randomUUID ? crypto.randomUUID() : prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+function newId() {
+  return crypto.randomUUID ? crypto.randomUUID() : 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2);
 }
 
 function idbOpen() {
@@ -350,37 +589,48 @@ function idbOpen() {
     req.onupgradeneeded = (event) => {
       const db = req.result;
       const tx = event.target.transaction;
-      const createBooksStore = () => {
-        if (!db.objectStoreNames.contains(IDB_STORE_BOOKS)) {
-          db.createObjectStore(IDB_STORE_BOOKS, { keyPath: 'id' });
-        }
-      };
-      // Переносим единственную книгу из старой версии хранилища (если есть)
-      // в новый стор нескольких книг — иначе уже сохранённая книга потеряется.
+      const ensureBooks = () => db.objectStoreNames.contains(IDB_STORE_BOOKS)
+        ? tx.objectStore(IDB_STORE_BOOKS)
+        : db.createObjectStore(IDB_STORE_BOOKS, { keyPath: 'id' });
+
+      // v1 → v2: единственная книга под ключом 'currentBook' переезжает в стор книг.
       if (db.objectStoreNames.contains(IDB_STORE_OLD)) {
         const getReq = tx.objectStore(IDB_STORE_OLD).get(IDB_OLD_KEY);
         getReq.onsuccess = () => {
-          createBooksStore();
+          const store = ensureBooks();
           const old = getReq.result;
           if (old) {
-            tx.objectStore(IDB_STORE_BOOKS).add({
-              id: newId('b'),
-              name: old.name,
-              data: old.data,
-              addedAt: old.savedAt || Date.now(),
-              lastOpenedAt: old.savedAt || Date.now(),
-              status: 'reading',
-              scrollPos: parseInt(localStorage.getItem(STORAGE_SCROLL_PDF) || '0', 10),
-              currentPage: 1,
-              pageCount: 0,
-              sourceLang: localStorage.getItem(STORAGE_SOURCE_LANG) || 'el',
-              bookmarks: [],
+            store.add({
+              id: newId(), name: old.name, data: old.data,
+              addedAt: old.savedAt || Date.now(), lastOpenedAt: old.savedAt || Date.now(),
+              status: 'reading', scrollPos: 0, currentPage: 1, pageCount: 0,
+              sourceLang: localStorage.getItem(STORAGE_SOURCE_LANG) || 'el', bookmarks: [],
             });
           }
           db.deleteObjectStore(IDB_STORE_OLD);
         };
       } else {
-        createBooksStore();
+        ensureBooks();
+      }
+
+      // v2 → v3: новые поля (метаданные, обложка, избранное/архив, заметки).
+      if (event.oldVersion >= 2 && event.oldVersion < 3) {
+        const store = tx.objectStore(IDB_STORE_BOOKS);
+        store.openCursor().onsuccess = (e) => {
+          const cur = e.target.result;
+          if (!cur) return;
+          const b = cur.value;
+          if (b.title === undefined) b.title = stripExt(b.name);
+          if (b.author === undefined) b.author = '';
+          if (b.coverDataUrl === undefined) b.coverDataUrl = null;
+          if (b.coverIsOwn === undefined) b.coverIsOwn = false;
+          if (b.favorite === undefined) b.favorite = false;
+          if (b.archived === undefined) b.archived = false;
+          if (!Array.isArray(b.notes)) b.notes = [];
+          if (!Array.isArray(b.bookmarks)) b.bookmarks = [];
+          cur.update(b);
+          cur.continue();
+        };
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -388,148 +638,209 @@ function idbOpen() {
   });
 }
 
-async function idbAddBook(record) {
-  const db = await idbOpen();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE_BOOKS, 'readwrite');
-    tx.objectStore(IDB_STORE_BOOKS).add(record);
-    tx.oncomplete = () => resolve(record);
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function idbGetBook(id) {
-  const db = await idbOpen();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE_BOOKS, 'readonly');
-    const req = tx.objectStore(IDB_STORE_BOOKS).get(id);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function idbGetAllBooks() {
-  const db = await idbOpen();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE_BOOKS, 'readonly');
-    const req = tx.objectStore(IDB_STORE_BOOKS).getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function idbUpdateBook(id, patch) {
-  const db = await idbOpen();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE_BOOKS, 'readwrite');
+function idbTx(mode, fn) {
+  return idbOpen().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE_BOOKS, mode);
     const store = tx.objectStore(IDB_STORE_BOOKS);
-    const getReq = store.get(id);
-    getReq.onsuccess = () => {
-      const rec = getReq.result;
-      if (!rec) return;
-      Object.assign(rec, patch);
-      store.put(rec);
-    };
-    tx.oncomplete = () => resolve();
+    let out;
+    fn(store, v => { out = v; });
+    tx.oncomplete = () => resolve(out);
     tx.onerror = () => reject(tx.error);
-  });
+  }));
 }
+const idbAddBook = rec => idbTx('readwrite', store => store.add(rec)).then(() => rec);
+const idbGetBook = id => idbTx('readonly', (store, set) => { store.get(id).onsuccess = e => set(e.target.result); });
+const idbGetAllBooks = () => idbTx('readonly', (store, set) => { store.getAll().onsuccess = e => set(e.target.result || []); });
+const idbDeleteBook = id => idbTx('readwrite', store => store.delete(id));
+const idbUpdateBook = (id, patch) => idbTx('readwrite', store => {
+  store.get(id).onsuccess = e => {
+    const rec = e.target.result;
+    if (!rec) return;
+    Object.assign(rec, patch);
+    store.put(rec);
+  };
+});
+
+function stripExt(name) { return String(name || '').replace(/\.pdf$/i, '').trim(); }
 
 const translateCache = JSON.parse(localStorage.getItem(STORAGE_CACHE) || '{}');
 function saveTranslateCache() { localStorage.setItem(STORAGE_CACHE, JSON.stringify(translateCache)); }
 
-// ══════════════════════════════════════════════════════════════
-// ЯЗЫК КНИГИ И ЯЗЫК ПЕРЕВОДА
-// ══════════════════════════════════════════════════════════════
-const STORAGE_SOURCE_LANG = 'reader_source_lang_v1';
-const STORAGE_TARGET_LANG = 'reader_target_lang_v1';
-const SOURCE_LANGS = [
-  { code: 'el', label: 'EL' },
-  { code: 'en', label: 'EN' },
-  { code: 'fr', label: 'FR' },
-  { code: 'de', label: 'DE' },
-  { code: 'es', label: 'ES' },
-  { code: 'it', label: 'IT' },
-];
-const TARGET_LANGS = [
-  { code: 'ru', label: 'RU' },
-  { code: 'en', label: 'EN' },
-];
+let savedWords = JSON.parse(localStorage.getItem(STORAGE_SAVED) || '[]');
+function persistSavedWords() { localStorage.setItem(STORAGE_SAVED, JSON.stringify(savedWords)); }
 
-// sourceLang — язык конкретной открытой книги (грузится/сохраняется в её
-// записи в IDB через openBook/setSourceLang), а не разовая глобальная
-// настройка: книги в библиотеке теперь могут быть на разных языках.
-// Значение по умолчанию для новых книг — язык последней открытой книги.
+// ══════════════════════════════════════════════════════════════
+// ОФОРМЛЕНИЕ (тема, акцент, масштаб, яркость)
+// ══════════════════════════════════════════════════════════════
+const THEMES = [
+  { code: 'light', name: 'Светлая', bg: '#F4F1EA', fg: '#2C2A26' },
+  { code: 'dark', name: 'Тёмная', bg: '#17171A', fg: '#ECEAE4' },
+  { code: 'sepia', name: 'Сепия', bg: '#EFE4D0', fg: '#3A3125' },
+];
+const ACCENTS = ['#6F8C5A', '#8B7BB8', '#4E92C4', '#D08A46', '#C96C8E'];
+
+let theme = localStorage.getItem(STORAGE_THEME) || 'light';
+let accent = localStorage.getItem(STORAGE_ACCENT) || ACCENTS[0];
+let zoom = parseInt(localStorage.getItem(STORAGE_ZOOM) || '100', 10);
+let brightness = parseInt(localStorage.getItem(STORAGE_BRIGHTNESS) || '100', 10);
+
+function applyAppearance() {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.style.setProperty('--accent', accent);
+  document.documentElement.style.setProperty('--accent-soft', accent + '22');
+  const base = theme === 'sepia' ? 'sepia(0.22) ' : theme === 'dark' ? 'invert(0.9) hue-rotate(180deg) ' : '';
+  document.documentElement.style.setProperty('--page-filter', base + `brightness(${brightness / 100})`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ЯЗЫКИ
+// ══════════════════════════════════════════════════════════════
+const SOURCE_LANGS = [
+  { code: 'el', label: 'EL' }, { code: 'en', label: 'EN' }, { code: 'fr', label: 'FR' },
+  { code: 'de', label: 'DE' }, { code: 'es', label: 'ES' }, { code: 'it', label: 'IT' },
+];
+const TARGET_LANGS = [{ code: 'ru', label: 'RU' }, { code: 'en', label: 'EN' }];
+
 let sourceLang = localStorage.getItem(STORAGE_SOURCE_LANG) || 'el';
 if (!SOURCE_LANGS.some(l => l.code === sourceLang)) sourceLang = 'el';
 let targetLang = localStorage.getItem(STORAGE_TARGET_LANG) || 'ru';
 if (!TARGET_LANGS.some(l => l.code === targetLang)) targetLang = 'ru';
 
-function renderLangGroup(containerId, langs, current, onPick) {
-  const box = document.getElementById(containerId);
-  box.innerHTML = '';
+function renderLangGroup(el, langs, current, onPick) {
+  el.innerHTML = '';
   langs.forEach(l => {
     const btn = document.createElement('button');
     btn.className = 'tp-lang-btn' + (l.code === current ? ' active' : '');
     btn.type = 'button';
     btn.textContent = l.label;
     btn.addEventListener('click', () => onPick(l.code));
-    box.append(btn);
+    el.append(btn);
   });
 }
-
 function renderLangToggles() {
-  renderLangGroup('tpSourceLangs', SOURCE_LANGS, sourceLang, setSourceLang);
-  renderLangGroup('tpTargetLangs', TARGET_LANGS, targetLang, setTargetLang);
+  renderLangGroup(document.getElementById('tpSourceLangs'), SOURCE_LANGS, sourceLang, setSourceLang);
+  renderLangGroup(document.getElementById('tpTargetLangs'), TARGET_LANGS, targetLang, setTargetLang);
+  renderLangGroup(document.getElementById('setTargetLangs'), TARGET_LANGS, targetLang, setTargetLang);
 }
-
 function setSourceLang(code) {
   if (code === sourceLang) return;
   sourceLang = code;
-  localStorage.setItem(STORAGE_SOURCE_LANG, sourceLang); // дефолт для следующей новой книги
-  if (currentBookId) idbUpdateBook(currentBookId, { sourceLang });
+  localStorage.setItem(STORAGE_SOURCE_LANG, code);
+  if (currentBookId) idbUpdateBook(currentBookId, { sourceLang: code });
   renderLangToggles();
-  if (currentText) translateWord(currentText);
+  if (currentText) translateText(currentText);
 }
-
 function setTargetLang(code) {
   if (code === targetLang) return;
   targetLang = code;
-  localStorage.setItem(STORAGE_TARGET_LANG, targetLang);
+  localStorage.setItem(STORAGE_TARGET_LANG, code);
   renderLangToggles();
-  if (currentText) translateWord(currentText);
-}
-
-let savedWords = JSON.parse(localStorage.getItem(STORAGE_SAVED) || '[]');
-function persistSavedWords() {
-  localStorage.setItem(STORAGE_SAVED, JSON.stringify(savedWords));
-  document.getElementById('savedCount').textContent = savedWords.length;
+  if (currentText) translateText(currentText);
 }
 
 // Буквы любого языка/письменности (включая диакритики) — то, что распознаётся
 // как тап-слово. \p{L}\p{M}, а не диапазон кодов конкретного алфавита: книга
 // может быть на любом из поддерживаемых языков, а не только на греческом.
-// Знаки препинания (в т.ч. греческие ";" и "·") не входят в категории L/M.
 const WORD_CHAR_RE = /[\p{L}\p{M}]/u;
 
 // ══════════════════════════════════════════════════════════════
-// НАВИГАЦИЯ ЭКРАНОВ
+// ОБЛОЖКИ-ЗАГЛУШКИ (SVG-шаблоны: текст названия ложится прямо в рисунок)
 // ══════════════════════════════════════════════════════════════
+const COVER_TEMPLATES = [
+  { bg: '#DFCFB4', ink: '#8A7550', txt: '#5C4B30', art: `<path d="M150 62c-30 0-52 24-52 54 0 18 9 27 9 39 0 9-6 12-6 20h20" stroke="#8A7550" stroke-width="1.6" fill="none"/><path d="M150 62c26 0 44 20 44 46 0 30-22 52-44 60" stroke="#8A7550" stroke-width="1.6" fill="none"/><path d="M143 100v56" stroke="#8A7550" stroke-width="1.4"/><path d="M143 112c-11-3-16-11-15-19 9-1 15 6 15 19Zm0 16c11-3 16-11 15-19-9-1-15 6-15 19Zm0 16c-11-3-16-11-15-19 9-1 15 6 15 19Z" fill="none" stroke="#8A7550" stroke-width="1.4"/>` },
+  { bg: '#4A5D42', ink: '#DCE5D2', txt: '#EAF0E2', art: `<rect width="300" height="250" fill="#9BB08C"/><circle cx="196" cy="96" r="26" fill="#E8EEDF"/><path d="M0 168c48-30 92 8 140-14s110 4 160-16v112H0Z" fill="#6E8560"/><path d="M0 210c54-26 96 6 150-12s100 6 150-10v62H0Z" fill="#4A5D42"/><path d="M132 250c14-24 4-38 16-56" stroke="#DCE5D2" stroke-width="3" fill="none"/>` },
+  { bg: '#EFEAE0', ink: '#B8AE9B', txt: '#5F5849', art: `<path d="M112 176V112a38 38 0 0 1 76 0v64Z" fill="#E2DACB"/><path d="M150 168v-44" stroke="#A79C86" stroke-width="1.5"/><path d="M150 138c-12-3-17-12-16-21 10-1 16 7 16 21Zm0 14c12-3 17-12 16-21-10-1-16 7-16 21Z" fill="none" stroke="#A79C86" stroke-width="1.5"/><path d="M150 176h44v12h-44Zm14-14h30v12h-30Z" fill="#D6CCB8"/>` },
+  { bg: '#9C8CA8', ink: '#E4DCEA', txt: '#F1ECF5', art: `<circle cx="126" cy="112" r="34" stroke="#E4DCEA" stroke-width="1.6" fill="none"/><circle cx="150" cy="146" r="22" stroke="#E4DCEA" stroke-width="1.6" fill="none"/><path d="M186 178V106" stroke="#6E5F7C" stroke-width="2"/><path d="M186 116c-9-4-12-13-10-20 8 0 12 9 10 20Zm0 18c9-4 12-13 10-20-8 0-12 9-10 20Zm0 18c-9-4-12-13-10-20 8 0 12 9 10 20Z" fill="#6E5F7C"/>` },
+  { bg: '#1E2635', ink: '#C6CEDC', txt: '#E4E9F1', art: `<path d="M196 74a26 26 0 1 0 22 30 20 20 0 0 1-22-30Z" fill="#E9EDF4"/><g fill="#D3DAE6"><circle cx="86" cy="72" r="1.6"/><circle cx="118" cy="98" r="1.2"/><circle cx="72" cy="120" r="1.4"/><circle cx="148" cy="66" r="1.2"/><circle cx="228" cy="140" r="1.4"/><circle cx="102" cy="150" r="1.2"/><circle cx="252" cy="92" r="1.2"/></g><path d="M0 198c56-34 100 6 152-16s96 8 148-10v78H0Z" fill="#33405A"/><path d="M0 232c60-24 104 8 152-8s96 4 148-8v34H0Z" fill="#222C3E"/>` },
+  { bg: '#B0A3C6', ink: '#E8E2F0', txt: '#F2EEF7', art: `<g stroke="#5E5470" stroke-width="1.8" fill="none"><path d="M122 96c4-5 8-5 12 0m0 0c4-5 8-5 12 0"/><path d="M148 78c3-4 7-4 10 0m0 0c3-4 7-4 10 0"/><path d="M164 108c3-4 7-4 10 0m0 0c3-4 7-4 10 0"/></g><g stroke="#9A8CB2" stroke-width="2" fill="none"><path d="M0 176c60-22 110 22 170 2s90-14 130-24"/><path d="M0 196c60-22 110 22 170 2s90-14 130-24"/><path d="M0 216c60-22 110 22 170 2s90-14 130-24"/></g>` },
+  { bg: '#F1EDE3', ink: '#BDB5A2', txt: '#5B5445', art: `<circle cx="150" cy="150" r="42" fill="#DFE3CE"/><g stroke="#A79E88" stroke-width="1.4" fill="none"><path d="M120 190v-56m0 0-12-12m12 12 12-12m-12 12-16 2m16-2 16 2"/><path d="M150 196v-70m0 0-13-13m13 13 13-13m-13 13-17 3m17-3 17 3"/><path d="M180 190v-58m0 0-12-12m12 12 12-12m-12 12-16 2m16-2 16 2"/></g>` },
+  { bg: '#3E5240', ink: '#CBD8C4', txt: '#E4EDDF', art: `<path d="M112 178V116a38 38 0 0 1 76 0v62Z" fill="#7E9478"/><path d="M112 178V116a38 38 0 0 1 76 0v62Z" fill="none" stroke="#CBD8C4" stroke-width="1.6"/><path d="M112 158c16-10 26 4 40-8s28 2 36-6v34h-76Z" fill="#3E5240"/><g fill="#2F4033"><path d="M128 178l8-26 8 26Zm22 0 9-30 9 30Zm24 0 7-22 7 22Z"/></g>` },
+  { bg: '#F0EADC', ink: '#C8BC9F', txt: '#5D5544', art: `<g stroke="#C8BC9F" stroke-width="1.3" fill="none"><path d="M-10 96c70-40 150 26 220-14s110-26 110-26"/><path d="M-10 116c70-40 150 26 220-14s110-26 110-26"/><path d="M-10 136c70-40 150 26 220-14s110-26 110-26"/><path d="M-10 158c70-40 150 26 220-14s110-26 110-26"/><path d="M-10 180c70-40 150 26 220-14s110-26 110-26"/><path d="M-10 202c70-40 150 26 220-14s110-26 110-26"/></g><circle cx="196" cy="150" r="2" fill="#C8BC9F"/>` },
+  { bg: '#D3A392', ink: '#F0DDD4', txt: '#5E3B30', art: `<path d="M124 186c-6-22-2-38 26-38s34 16 28 38Z" fill="#C08C79"/><path d="M150 148v-38" stroke="#7C4E3F" stroke-width="1.6"/><path d="M150 122c-14-4-20-14-18-24 12-1 18 9 18 24Zm0 16c14-4 20-14 18-24-12-1-18 9-18 24Z" fill="none" stroke="#7C4E3F" stroke-width="1.6"/><circle cx="176" cy="140" r="26" fill="#C79A88" opacity="0.55"/>` },
+];
+
+function hashCode(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function wrapText(text, maxChars, maxLines) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    if (!line) line = w;
+    else if ((line + ' ' + w).length <= maxChars) line += ' ' + w;
+    else { lines.push(line); line = w; }
+    if (lines.length === maxLines) break;
+  }
+  if (line && lines.length < maxLines) lines.push(line);
+  if (lines.length === maxLines && words.join(' ').length > lines.join(' ').length) {
+    lines[maxLines - 1] = lines[maxLines - 1].replace(/.{0,2}$/, '…');
+  }
+  return lines;
+}
+
+const esc = s => String(s || '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+
+function placeholderCover(book) {
+  const t = COVER_TEMPLATES[hashCode(book.id || book.name || '') % COVER_TEMPLATES.length];
+  const titleLines = wrapText((book.title || stripExt(book.name)).toUpperCase(), 16, 3);
+  const startY = 300 - (titleLines.length - 1) * 15;
+  const tspans = titleLines
+    .map((l, i) => `<tspan x="150" y="${startY + i * 22}">${esc(l)}</tspan>`).join('');
+  const author = book.author ? `<text x="150" y="${startY + titleLines.length * 22 + 12}" text-anchor="middle" font-family="Georgia,serif" font-size="12" fill="${t.txt}" opacity="0.85">${esc(wrapText(book.author, 24, 1)[0])}</text>` : '';
+  return `<svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <rect width="300" height="400" fill="${t.bg}"/>${t.art}
+    <text text-anchor="middle" font-family="Georgia,serif" font-size="17" letter-spacing="1.5" fill="${t.txt}">${tspans}</text>${author}
+    <rect x="0" y="0" width="7" height="400" fill="rgba(0,0,0,0.10)"/>
+  </svg>`;
+}
+
+function coverHTML(book) {
+  return book.coverIsOwn && book.coverDataUrl
+    ? `<img src="${book.coverDataUrl}" alt="">`
+    : placeholderCover(book);
+}
+
+// ══════════════════════════════════════════════════════════════
+// НАВИГАЦИЯ
+// ══════════════════════════════════════════════════════════════
+const TABS = [
+  { id: 'view-library', label: 'Библиотека', icon: 'book', render: renderLibrary },
+  { id: 'view-bookmarks', label: 'Закладки', icon: 'bookmark', render: renderBookmarks },
+  { id: 'view-notes', label: 'Заметки', icon: 'note', render: renderNotes },
+  { id: 'view-settings', label: 'Настройки', icon: 'settings', render: renderSettings },
+];
+let activeTab = 'view-library';
+
+function renderTabbar() {
+  const bar = document.getElementById('tabbar');
+  bar.innerHTML = '';
+  TABS.forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'tab' + (t.id === activeTab ? ' active' : '');
+    b.type = 'button';
+    b.innerHTML = icon(t.icon) + `<span>${t.label}</span>`;
+    b.addEventListener('click', () => showTab(t.id));
+    bar.append(b);
+  });
+}
+
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  document.getElementById('tabbar').classList.toggle('show', id !== 'view-pdf');
+  window.scrollTo(0, 0);
 }
 
-let libraryShelf = 'reading'; // 'reading' | 'finished' — какая полка открыта в библиотеке
-
-async function showLibrary() {
-  closePanel();
-  showScreen('view-library');
-  await renderLibrary();
-}
-
-async function openSaved() {
-  closePanel();
-  showScreen('view-saved');
-  document.getElementById('copyFeedback').textContent = '';
-  renderSavedList();
+async function showTab(id) {
+  closeAllSheets();
+  activeTab = id;
+  showScreen(id);
+  renderTabbar();
+  const tab = TABS.find(t => t.id === id);
+  if (tab) await tab.render();
 }
 
 function pickFile() { document.getElementById('pdfFileInput').click(); }
@@ -537,113 +848,232 @@ function pickFile() { document.getElementById('pdfFileInput').click(); }
 // ══════════════════════════════════════════════════════════════
 // БИБЛИОТЕКА
 // ══════════════════════════════════════════════════════════════
+const FILTERS = [
+  { code: 'reading', label: 'Читаю', match: b => !b.archived && b.status === 'reading' },
+  { code: 'want', label: 'Хочу прочитать', match: b => !b.archived && b.status === 'want' },
+  { code: 'finished', label: 'Прочитано', match: b => !b.archived && b.status === 'finished' },
+  { code: 'favorite', label: 'Избранное', match: b => !b.archived && b.favorite },
+  { code: 'archived', label: 'Архив', match: b => b.archived },
+];
+let activeFilter = 'reading';
+let searchQuery = '';
+
 async function renderLibrary() {
-  const body = document.getElementById('libraryBody');
   const books = await idbGetAllBooks();
+  const body = document.getElementById('libraryBody');
+  const chipsEl = document.getElementById('filterChips');
+  const searchWrap = document.querySelector('.search-wrap');
 
   if (!books.length) {
-    body.innerHTML = `
-      <div class="lib-empty">
-        <div class="lib-empty-icon">📚</div>
-        <div class="lib-empty-title">Пока пусто</div>
-        <div class="lib-empty-sub">Открой PDF-файл — потом можно будет тапнуть по слову или выделить фразу, чтобы увидеть перевод. Язык книги и язык перевода настраиваются в панели перевода</div>
-        <button class="btn-primary" onclick="pickFile()">Открыть PDF</button>
-      </div>`;
+    chipsEl.style.display = 'none';
+    searchWrap.style.display = 'none';
+    body.innerHTML = `<div class="empty">
+      <div class="empty-icon">${icon('book')}</div>
+      <div class="empty-title">Библиотека пуста</div>
+      <div>Открой PDF — потом можно тапнуть по слову или выделить фразу, чтобы увидеть перевод, а важное отметить маркером.</div>
+      <button class="btn-primary" id="emptyAdd">${icon('plus')}Открыть PDF</button>
+    </div>`;
+    document.getElementById('emptyAdd').addEventListener('click', pickFile);
     return;
   }
+  chipsEl.style.display = '';
+  searchWrap.style.display = '';
 
-  const shelfBooks = books
-    .filter(b => b.status === libraryShelf)
-    .sort((a, b) => (b.lastOpenedAt || b.addedAt) - (a.lastOpenedAt || a.addedAt));
-
-  body.innerHTML = `
-    <div class="lib-shelf-tabs">
-      <button class="tp-lang-btn${libraryShelf === 'reading' ? ' active' : ''}" type="button" data-shelf="reading">Читаю</button>
-      <button class="tp-lang-btn${libraryShelf === 'finished' ? ' active' : ''}" type="button" data-shelf="finished">Прочитано</button>
-    </div>
-    <div class="book-list" id="bookList"></div>
-    <div class="lib-add-row"><button class="btn-outline" onclick="pickFile()">Открыть ещё файл</button></div>`;
-
-  body.querySelectorAll('.lib-shelf-tabs button').forEach(btn => {
-    btn.addEventListener('click', () => { libraryShelf = btn.dataset.shelf; renderLibrary(); });
+  chipsEl.innerHTML = '';
+  FILTERS.forEach(f => {
+    const n = books.filter(f.match).length;
+    const b = document.createElement('button');
+    b.className = 'chip' + (f.code === activeFilter ? ' active' : '');
+    b.type = 'button';
+    b.innerHTML = `${f.label}${n ? `<span class="chip-count">${n}</span>` : ''}`;
+    b.addEventListener('click', () => { activeFilter = f.code; renderLibrary(); });
+    chipsEl.append(b);
   });
 
-  const listEl = body.querySelector('#bookList');
-  if (!shelfBooks.length) {
-    listEl.innerHTML = `<div class="saved-empty">${libraryShelf === 'reading'
-      ? 'Нет книг в чтении.'
-      : 'Пока нет прочитанных книг — отметь книгу прочитанной в шапке читалки.'}</div>`;
+  const filter = FILTERS.find(f => f.code === activeFilter);
+  const q = searchQuery.trim().toLowerCase();
+  const shown = books
+    .filter(filter.match)
+    .filter(b => !q || (b.title || b.name).toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q))
+    .sort((a, b) => (b.lastOpenedAt || b.addedAt) - (a.lastOpenedAt || a.addedAt));
+
+  body.innerHTML = `<div class="book-list" id="bookList"></div>
+    <div class="add-row"><button class="btn-outline" id="addMore">${icon('plus')}Открыть ещё файл</button></div>`;
+  document.getElementById('addMore').addEventListener('click', pickFile);
+
+  const list = document.getElementById('bookList');
+  if (!shown.length) {
+    list.innerHTML = `<div class="empty">${q ? 'Ничего не нашлось по запросу.' : 'Здесь пока пусто.'}</div>`;
     return;
   }
-  shelfBooks.forEach(b => listEl.appendChild(renderBookCard(b)));
+  shown.forEach(b => list.append(bookCard(b)));
 }
 
-function renderBookCard(book) {
+function bookCard(book) {
   const card = document.createElement('div');
   card.className = 'book-card';
-  const progress = book.pageCount ? `стр. ${book.currentPage || 1} из ${book.pageCount}` : 'Ещё не открыта';
-  card.innerHTML = `
-    <button class="book-card-open" type="button">
-      <div class="book-card-icon">📖</div>
-      <div class="book-card-info">
-        <div class="book-card-name"></div>
-        <div class="book-card-progress"></div>
-      </div>
-    </button>`;
-  card.querySelector('.book-card-name').textContent = book.name;
-  card.querySelector('.book-card-progress').textContent = progress;
-  card.querySelector('.book-card-open').addEventListener('click', () => openBook(book.id));
+  const pct = book.pageCount ? Math.round((book.currentPage || 1) / book.pageCount * 100) : 0;
+  const meta = book.pageCount ? `Стр. ${book.currentPage || 1} из ${book.pageCount}` : 'Ещё не открыта';
 
-  if (book.status === 'finished') {
-    const backBtn = document.createElement('button');
-    backBtn.className = 'btn-link'; backBtn.type = 'button';
-    backBtn.textContent = '↺ Вернуть в чтение';
-    backBtn.addEventListener('click', async (ev) => {
-      ev.stopPropagation();
-      await idbUpdateBook(book.id, { status: 'reading' });
-      renderLibrary();
-    });
-    card.appendChild(backBtn);
-  }
+  const open = document.createElement('button');
+  open.className = 'book-open';
+  open.type = 'button';
+  open.innerHTML = `
+    <div class="cover">${coverHTML(book)}</div>
+    <div class="book-info">
+      <div class="book-name"></div>
+      <div class="book-author"></div>
+      <div class="book-progress-row">
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="book-meta">${book.pageCount ? pct + '%' : ''}</div>
+      </div>
+      <div class="book-meta" style="margin-top:5px">${meta}</div>
+    </div>`;
+  open.querySelector('.book-name').textContent = book.title || stripExt(book.name);
+  const authorEl = open.querySelector('.book-author');
+  if (book.author) authorEl.textContent = book.author; else authorEl.remove();
+  open.addEventListener('click', () => openBook(book.id));
+
+  const badges = document.createElement('div');
+  badges.className = 'book-badges';
+  if (book.favorite) badges.innerHTML += icon('heartFill', 'icon-sm');
+  if (book.status === 'finished') badges.innerHTML += icon('check', 'icon-sm');
+
+  const more = document.createElement('button');
+  more.className = 'btn-link';
+  more.type = 'button';
+  more.setAttribute('aria-label', 'Действия с книгой');
+  more.innerHTML = icon('more');
+  more.addEventListener('click', e => { e.stopPropagation(); openBookSheet(book.id); });
+
+  card.append(open, badges, more);
   return card;
+}
+
+// ══════════════════════════════════════════════════════════════
+// МЕНЮ КНИГИ
+// ══════════════════════════════════════════════════════════════
+async function openBookSheet(id) {
+  const book = await idbGetBook(id);
+  if (!book) return;
+  const body = document.getElementById('bookSheetBody');
+  const statuses = [
+    { code: 'want', label: 'Хочу прочитать', ic: 'want' },
+    { code: 'reading', label: 'Читаю', ic: 'reading' },
+    { code: 'finished', label: 'Прочитано', ic: 'check' },
+  ];
+
+  body.innerHTML = `
+    <div class="sheet-book-top">
+      <div class="cover">${coverHTML(book)}</div>
+      <div style="min-width:0">
+        <div class="row-title" id="bsTitle"></div>
+        <div class="row-sub" id="bsAuthor"></div>
+      </div>
+    </div>
+    <div id="bsItems"></div>`;
+  body.querySelector('#bsTitle').textContent = book.title || stripExt(book.name);
+  body.querySelector('#bsAuthor').textContent = book.author || 'Автор не указан';
+
+  const items = body.querySelector('#bsItems');
+  const add = (ic, label, on, handler, cls = '') => {
+    const b = document.createElement('button');
+    b.className = 'menu-item ' + cls + (on ? ' on' : '');
+    b.type = 'button';
+    b.innerHTML = icon(ic) + `<span>${label}</span>` + (on ? `<span style="margin-left:auto">${icon('check', 'icon-sm')}</span>` : '');
+    b.addEventListener('click', handler);
+    items.append(b);
+  };
+
+  add('book', 'Продолжить чтение', false, () => { closeAllSheets(); openBook(id); });
+  statuses.forEach(s => add(s.ic, s.label, book.status === s.code, async () => {
+    await idbUpdateBook(id, { status: s.code });
+    closeAllSheets(); renderLibrary();
+  }));
+  add(book.favorite ? 'heartFill' : 'heart', book.favorite ? 'В избранном' : 'В избранное', book.favorite, async () => {
+    await idbUpdateBook(id, { favorite: !book.favorite });
+    closeAllSheets(); renderLibrary();
+  });
+  add('archive', book.archived ? 'Вернуть из архива' : 'В архив', book.archived, async () => {
+    await idbUpdateBook(id, { archived: !book.archived });
+    closeAllSheets(); renderLibrary();
+  });
+  add('trash', 'Удалить книгу', false, async () => {
+    const name = book.title || stripExt(book.name);
+    if (!confirm(`Удалить «${name}»?\n\nКнига, её закладки и заметки будут стёрты безвозвратно.`)) return;
+    await idbDeleteBook(id);
+    if (currentBookId === id) currentBookId = null;
+    closeAllSheets(); renderLibrary();
+  }, 'danger');
+
+  openSheet('bookSheet');
 }
 
 // ══════════════════════════════════════════════════════════════
 // ЧТЕНИЕ PDF
 // ══════════════════════════════════════════════════════════════
-const pdfWordMaps = new WeakMap(); // textLayer div -> {text, nodeStart}
+const pdfWordMaps = new WeakMap(); // textLayer div -> {text, nodes:[{node,start,end}]}
 let scrollSaveTimer = null;
-let bookmarkFeedbackTimer = null;
-let currentPages = []; // [{viewport, wrap}] текущей открытой книги — для индикатора страницы
+let currentPages = [];
 let chromeVisible = true;
-let currentBookId = null; // id открытой сейчас книги (в записи books)
+let currentBookId = null;
+let currentBook = null;
 
 async function handlePdfFile(file) {
   if (!file) return;
   const buf = await file.arrayBuffer();
   const record = {
-    id: newId('b'),
-    name: file.name,
-    data: buf,
-    addedAt: Date.now(),
-    lastOpenedAt: Date.now(),
-    status: 'reading',
-    scrollPos: 0,
-    currentPage: 1,
-    pageCount: 0,
+    id: newId(), name: file.name, data: buf,
+    title: stripExt(file.name), author: '',
+    coverDataUrl: null, coverIsOwn: false,
+    addedAt: Date.now(), lastOpenedAt: Date.now(),
+    status: 'reading', favorite: false, archived: false,
+    scrollPos: 0, currentPage: 1, pageCount: 0,
     sourceLang: localStorage.getItem(STORAGE_SOURCE_LANG) || 'el',
-    bookmarks: [],
+    bookmarks: [], notes: [],
   };
   await idbAddBook(record);
+  buildBookMeta(record.id, buf).catch(() => {});
   await openBook(record.id);
+}
+
+// Метаданные и обложка считаются в фоне: открытие книги не должно их ждать.
+async function buildBookMeta(id, buf) {
+  const doc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+  const patch = { pageCount: doc.numPages };
+
+  try {
+    const meta = await doc.getMetadata();
+    const info = meta && meta.info || {};
+    if (info.Title && info.Title.trim()) patch.title = info.Title.trim();
+    if (info.Author && info.Author.trim()) patch.author = info.Author.trim();
+  } catch {}
+
+  try {
+    const page = await doc.getPage(1);
+    const viewport = page.getViewport({ scale: 300 / page.getViewport({ scale: 1 }).width });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    patch.coverDataUrl = canvas.toDataURL('image/jpeg', 0.72);
+    // Настоящая обложка — это картинка, на ней почти нет извлекаемого текста.
+    // Титульная страница из текста выглядит как обложка плохо — там рисуем заглушку.
+    const text = await page.getTextContent();
+    patch.coverIsOwn = text.items.map(i => i.str).join('').trim().length < 200;
+  } catch {}
+
+  await idbUpdateBook(id, patch);
+  if (activeTab === 'view-library') renderLibrary();
 }
 
 async function openBook(id) {
   const book = await idbGetBook(id);
   if (!book) return false;
   currentBookId = id;
+  currentBook = book;
   sourceLang = SOURCE_LANGS.some(l => l.code === book.sourceLang) ? book.sourceLang : 'el';
-  document.getElementById('chromeTitle').textContent = book.name;
+  document.getElementById('chromeTitle').textContent = book.title || stripExt(book.name);
   setChrome(true);
   showScreen('view-pdf');
   await renderPdf(book.data, book.scrollPos || 0);
@@ -656,12 +1086,11 @@ async function renderPdf(arrayBuffer, savedScroll) {
   container.innerHTML = '';
   const doc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
 
-  const targetWidth = Math.min(document.body.clientWidth, 640) - 32;
+  const targetWidth = (Math.min(document.body.clientWidth, 640) - 32) * (zoom / 100);
   const pageInfos = [];
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
-    const unscaled = page.getViewport({ scale: 1 });
-    const scale = targetWidth / unscaled.width;
+    const scale = targetWidth / page.getViewport({ scale: 1 }).width;
     const viewport = page.getViewport({ scale });
 
     const wrap = document.createElement('div');
@@ -670,7 +1099,7 @@ async function renderPdf(arrayBuffer, savedScroll) {
     wrap.style.height = viewport.height + 'px';
     wrap.innerHTML = '<div class="pdf-page-loading">Страница ' + i + '…</div>';
     container.appendChild(wrap);
-    pageInfos.push({ page, viewport, wrap, rendered: false });
+    pageInfos.push({ page, viewport, wrap, num: i, rendered: false });
   }
   currentPages = pageInfos;
 
@@ -686,7 +1115,6 @@ async function renderPdf(arrayBuffer, savedScroll) {
   }, { rootMargin: '1000px 0px' });
   pageInfos.forEach(p => observer.observe(p.wrap));
 
-  // Возвращаемся туда, где остановились в прошлый раз (позиция этой книги).
   if (savedScroll > 0) requestAnimationFrame(() => window.scrollTo(0, savedScroll));
 
   updatePageIndicator();
@@ -707,7 +1135,7 @@ function onReaderScroll() {
 function currentPageNumber() {
   if (!currentPages.length) return 1;
   const probe = window.scrollY + innerHeight * 0.35;
-  let cum = 64, current = 1; // 64 — верхний паддинг #pdfContainer
+  let cum = 68, current = 1; // 68 — верхний паддинг #pdfContainer
   for (let i = 0; i < currentPages.length; i++) {
     const h = currentPages[i].viewport.height + 14;
     current = i + 1;
@@ -719,18 +1147,21 @@ function currentPageNumber() {
 
 function updatePageIndicator() {
   const el = document.getElementById('pageIndicator');
-  if (!currentPages.length) { el.textContent = ''; return; }
-  el.textContent = currentPageNumber() + ' / ' + currentPages.length;
+  el.textContent = currentPages.length ? currentPageNumber() + ' / ' + currentPages.length : '';
 }
 
-async function renderPdfPage({ page, viewport, wrap }) {
+async function renderPdfPage(info) {
+  const { page, viewport, wrap } = info;
   wrap.innerHTML = '';
   const canvas = document.createElement('canvas');
   canvas.width = viewport.width;
   canvas.height = viewport.height;
   wrap.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  await page.render({ canvasContext: ctx, viewport }).promise;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+  const hlLayer = document.createElement('div');
+  hlLayer.className = 'highlight-layer';
+  wrap.appendChild(hlLayer);
 
   const textContent = await page.getTextContent();
   const textLayerDiv = document.createElement('div');
@@ -742,78 +1173,99 @@ async function renderPdfPage({ page, viewport, wrap }) {
 
   // Плоская карта текста слоя: клик может попасть на границу между двумя
   // соседними <span> внутри одного слова (шрифт в PDF режет текст на
-  // фрагменты по своим правилам кернинга, не по словам) — без этой карты
-  // слово на стыке фрагментов терялось наполовину.
+  // фрагменты по своим правилам кернинга, не по словам). Она же даёт
+  // стабильные символьные смещения для подсветки маркером.
   const walker = document.createTreeWalker(textLayerDiv, NodeFilter.SHOW_TEXT);
   let text = '';
-  const nodeStart = new Map();
+  const nodes = [];
   let n;
   while ((n = walker.nextNode())) {
-    nodeStart.set(n, text.length);
+    nodes.push({ node: n, start: text.length, end: text.length + n.textContent.length });
     text += n.textContent;
   }
-  pdfWordMaps.set(textLayerDiv, { text, nodeStart });
+  const map = { text, nodes, page: info.num, hlLayer, wrap };
+  pdfWordMaps.set(textLayerDiv, map);
+  info.map = map;
+  drawHighlights(map);
 }
 
-// Тап по слову — перевод; тап по остальной части страницы (пустое место
-// между строк, поля) — показать/спрятать верхнюю панель, как в iBooks.
+// ══════════════════════════════════════════════════════════════
+// ПОДСВЕТКА МАРКЕРОМ
+// ══════════════════════════════════════════════════════════════
+const HL_COLORS = [
+  { code: 'yellow', hex: '#F2DC8C' },
+  { code: 'green', hex: '#B7D6A0' },
+  { code: 'pink', hex: '#F0B8C4' },
+  { code: 'blue', hex: '#AECBE6' },
+];
+const hlHex = code => (HL_COLORS.find(c => c.code === code) || HL_COLORS[0]).hex;
+
+function rangeFromOffsets(map, start, end) {
+  const s = map.nodes.find(n => start >= n.start && start < n.end);
+  const e = map.nodes.find(n => end > n.start && end <= n.end);
+  if (!s || !e) return null;
+  const r = document.createRange();
+  r.setStart(s.node, start - s.start);
+  r.setEnd(e.node, end - e.start);
+  return r;
+}
+
+function offsetsFromRange(map, range) {
+  const s = map.nodes.find(n => n.node === range.startContainer);
+  const e = map.nodes.find(n => n.node === range.endContainer);
+  if (!s || !e) return null;
+  return { start: s.start + range.startOffset, end: e.start + range.endOffset };
+}
+
+function drawHighlights(map) {
+  if (!map || !map.hlLayer) return;
+  map.hlLayer.innerHTML = '';
+  const notes = (currentBook && currentBook.notes || []).filter(nt => nt.page === map.page);
+  const base = map.wrap.getBoundingClientRect();
+  notes.forEach(nt => {
+    const range = rangeFromOffsets(map, nt.startOffset, nt.endOffset);
+    if (!range) return;
+    Array.from(range.getClientRects()).forEach(r => {
+      const d = document.createElement('div');
+      d.className = 'hl-rect';
+      d.style.cssText = `left:${r.left - base.left}px;top:${r.top - base.top}px;width:${r.width}px;height:${r.height}px;background:${hlHex(nt.color)};opacity:0.5`;
+      map.hlLayer.appendChild(d);
+    });
+  });
+}
+
+function redrawAllHighlights() {
+  currentPages.forEach(p => p.map && drawHighlights(p.map));
+}
+
+function noteAtPoint(x, y, map) {
+  const pos = caretAt(x, y);
+  if (!pos) return null;
+  const holder = map.nodes.find(n => n.node === pos.node);
+  if (!holder) return null;
+  const gi = holder.start + pos.offset;
+  return (currentBook && currentBook.notes || [])
+    .find(nt => nt.page === map.page && gi >= nt.startOffset && gi < nt.endOffset) || null;
+}
+
+// ══════════════════════════════════════════════════════════════
+// ТАП ПО СТРАНИЦЕ
+// ══════════════════════════════════════════════════════════════
 document.getElementById('pdfContainer').addEventListener('click', e => {
-  // Клик, которым закрывают/снимают выделение (см. блок выделения ниже),
-  // не должен заодно открывать панель по слову или прятать шапку.
+  // Клик, которым снимают выделение, не должен открывать панель или прятать шапку.
   if (window.getSelection().toString().trim()) return;
   const tlayer = e.target.closest('.textLayer');
   if (tlayer) {
     const map = pdfWordMaps.get(tlayer);
-    const word = map ? wordAtPoint(e.clientX, e.clientY, map) : null;
-    if (word) { openPanel(word); return; }
+    if (map) {
+      const note = noteAtPoint(e.clientX, e.clientY, map);
+      if (note) { openNoteSheet(note); return; }
+      const word = wordAtPoint(e.clientX, e.clientY, map);
+      if (word) { openPanel(word); return; }
+    }
   }
   setChrome(!chromeVisible);
 });
-
-// ══════════════════════════════════════════════════════════════
-// ВЫДЕЛЕНИЕ ТЕКСТА — перевод фразы/абзаца (не только одного слова)
-// ══════════════════════════════════════════════════════════════
-let pendingSelectionText = '';
-
-function handleSelectionChange() {
-  const sel = window.getSelection();
-  const btn = document.getElementById('selectionBtn');
-  const text = sel && !sel.isCollapsed && sel.rangeCount ? sel.toString().trim() : '';
-  const anchorNode = sel && sel.anchorNode;
-  const anchorEl = anchorNode ? (anchorNode.nodeType === 1 ? anchorNode : anchorNode.parentElement) : null;
-  const insideTextLayer = anchorEl && anchorEl.closest && anchorEl.closest('.textLayer');
-
-  if (!text || !insideTextLayer) {
-    btn.classList.remove('show');
-    pendingSelectionText = '';
-    return;
-  }
-
-  pendingSelectionText = text;
-  const rect = sel.getRangeAt(0).getBoundingClientRect();
-  btn.classList.add('show');
-  const bw = btn.offsetWidth, bh = btn.offsetHeight;
-  let top = rect.top - bh - 8;
-  if (top < 8) top = rect.bottom + 8;
-  let left = rect.left + rect.width / 2 - bw / 2;
-  left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
-  btn.style.top = top + 'px';
-  btn.style.left = left + 'px';
-}
-
-document.addEventListener('selectionchange', handleSelectionChange);
-
-// Нажатие на саму кнопку не должно сначала снять выделение (обычное
-// поведение браузера на mousedown/pointerdown вне выделенного текста) —
-// иначе к моменту click текст выделения уже потерян.
-document.getElementById('selectionBtn').addEventListener('pointerdown', e => e.preventDefault());
-
-function translateSelection() {
-  const text = pendingSelectionText;
-  document.getElementById('selectionBtn').classList.remove('show');
-  window.getSelection().removeAllRanges();
-  if (text) openPanel(text);
-}
 
 function setChrome(visible) {
   chromeVisible = visible;
@@ -821,32 +1273,148 @@ function setChrome(visible) {
   document.getElementById('pageIndicator').classList.toggle('hidden', !visible);
 }
 
-function wordAtPoint(x, y, map) {
-  let node, offset;
+function caretAt(x, y) {
   if (document.caretPositionFromPoint) {
     const pos = document.caretPositionFromPoint(x, y);
-    if (!pos) return null;
-    node = pos.offsetNode; offset = pos.offset;
-  } else if (document.caretRangeFromPoint) {
-    const range = document.caretRangeFromPoint(x, y);
-    if (!range) return null;
-    node = range.startContainer; offset = range.startOffset;
-  } else return null;
+    if (!pos || pos.offsetNode.nodeType !== Node.TEXT_NODE) return null;
+    return { node: pos.offsetNode, offset: pos.offset };
+  }
+  if (document.caretRangeFromPoint) {
+    const r = document.caretRangeFromPoint(x, y);
+    if (!r || r.startContainer.nodeType !== Node.TEXT_NODE) return null;
+    return { node: r.startContainer, offset: r.startOffset };
+  }
+  return null;
+}
 
-  if (node.nodeType !== Node.TEXT_NODE) return null;
-  const base = map.nodeStart.get(node);
-  if (base === undefined) return null;
-  const gi = base + offset;
+function wordAtPoint(x, y, map) {
+  const pos = caretAt(x, y);
+  if (!pos) return null;
+  const holder = map.nodes.find(n => n.node === pos.node);
+  if (!holder) return null;
   const text = map.text;
-  let start = gi, end = gi;
+  let start = holder.start + pos.offset, end = start;
   while (start > 0 && WORD_CHAR_RE.test(text[start - 1])) start--;
   while (end < text.length && WORD_CHAR_RE.test(text[end])) end++;
-  const word = text.slice(start, end);
-  return word || null;
+  return text.slice(start, end) || null;
 }
 
 // ══════════════════════════════════════════════════════════════
-// ПЕРЕВОД (панель снизу)
+// ВЫДЕЛЕНИЕ ТЕКСТА
+// ══════════════════════════════════════════════════════════════
+let pendingSelection = null; // {text, map, start, end}
+
+function handleSelectionChange() {
+  const sel = window.getSelection();
+  const bar = document.getElementById('selToolbar');
+  const text = sel && !sel.isCollapsed && sel.rangeCount ? sel.toString().trim() : '';
+  const anchor = sel && sel.anchorNode;
+  const anchorEl = anchor ? (anchor.nodeType === 1 ? anchor : anchor.parentElement) : null;
+  const tlayer = anchorEl && anchorEl.closest ? anchorEl.closest('.textLayer') : null;
+
+  if (!text || !tlayer) {
+    bar.classList.remove('show');
+    pendingSelection = null;
+    return;
+  }
+
+  const map = pdfWordMaps.get(tlayer);
+  const range = sel.getRangeAt(0);
+  const offsets = map ? offsetsFromRange(map, range) : null;
+  pendingSelection = { text, map, ...(offsets || {}) };
+
+  const rect = range.getBoundingClientRect();
+  bar.classList.add('show');
+  const bw = bar.offsetWidth, bh = bar.offsetHeight;
+  let top = rect.top - bh - 10;
+  if (top < 10) top = rect.bottom + 10;
+  let left = rect.left + rect.width / 2 - bw / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
+  bar.style.top = top + 'px';
+  bar.style.left = left + 'px';
+}
+document.addEventListener('selectionchange', handleSelectionChange);
+
+// Нажатие на панель не должно сначала снять выделение (обычное поведение
+// браузера на pointerdown вне выделенного текста) — иначе к моменту click
+// текст выделения уже потерян.
+document.getElementById('selToolbar').addEventListener('pointerdown', e => e.preventDefault());
+
+function renderSelColors() {
+  const box = document.getElementById('selColors');
+  box.innerHTML = '';
+  HL_COLORS.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'sel-color';
+    b.type = 'button';
+    b.style.background = c.hex;
+    b.setAttribute('aria-label', 'Выделить маркером');
+    b.addEventListener('click', () => highlightSelection(c.code));
+    box.append(b);
+  });
+}
+
+async function highlightSelection(color) {
+  const sel = pendingSelection;
+  if (!sel || !sel.map || sel.start === undefined) return;
+  const note = {
+    id: newId(), page: sel.map.page,
+    startOffset: sel.start, endOffset: sel.end,
+    text: sel.text, color, comment: '', createdAt: Date.now(),
+  };
+  currentBook.notes = (currentBook.notes || []).concat(note);
+  await idbUpdateBook(currentBookId, { notes: currentBook.notes });
+  document.getElementById('selToolbar').classList.remove('show');
+  window.getSelection().removeAllRanges();
+  drawHighlights(sel.map);
+  openNoteSheet(note);
+}
+
+function translateSelection() {
+  const sel = pendingSelection;
+  document.getElementById('selToolbar').classList.remove('show');
+  window.getSelection().removeAllRanges();
+  if (sel && sel.text) openPanel(sel.text);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ЗАМЕТКА К ВЫДЕЛЕНИЮ
+// ══════════════════════════════════════════════════════════════
+let editingNote = null;
+
+function openNoteSheet(note) {
+  editingNote = note;
+  document.getElementById('noteQuote').textContent = note.text;
+  document.getElementById('noteInput').value = note.comment || '';
+  const colors = document.getElementById('noteColors');
+  colors.innerHTML = '';
+  HL_COLORS.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'sel-color';
+    b.type = 'button';
+    b.style.background = c.hex;
+    b.style.borderColor = c.code === editingNote.color ? 'var(--text)' : 'transparent';
+    b.addEventListener('click', async () => {
+      editingNote.color = c.code;
+      await persistNote();
+      openNoteSheet(editingNote);
+      redrawAllHighlights();
+    });
+    colors.append(b);
+  });
+  document.getElementById('noteDelete').innerHTML = icon('trash') + 'Удалить';
+  openSheet('noteSheet');
+}
+
+async function persistNote() {
+  if (!currentBookId || !editingNote) return;
+  const notes = (currentBook.notes || []).map(n => n.id === editingNote.id ? editingNote : n);
+  currentBook.notes = notes;
+  await idbUpdateBook(currentBookId, { notes });
+}
+
+// ══════════════════════════════════════════════════════════════
+// ПЕРЕВОД
 // ══════════════════════════════════════════════════════════════
 let currentText = null;
 let requestToken = 0;
@@ -856,15 +1424,14 @@ async function openPanel(text) {
   const wordEl = document.getElementById('tpWord');
   wordEl.textContent = text;
   wordEl.classList.toggle('long', text.length > 60);
-  document.getElementById('backdrop').classList.add('show');
-  document.getElementById('panel').classList.add('show');
   updateSaveButton();
   renderLangToggles();
-  await translateWord(text);
+  openSheet('panel');
+  await translateText(text);
 }
 
-async function translateWord(word) {
-  const key = word.toLowerCase() + '|' + sourceLang + '|' + targetLang;
+async function translateText(text) {
+  const key = text.toLowerCase() + '|' + sourceLang + '|' + targetLang;
   const tEl = document.getElementById('tpTranslation');
 
   if (translateCache[key]) {
@@ -878,70 +1445,215 @@ async function translateWord(word) {
 
   const myToken = ++requestToken;
   try {
-    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' + sourceLang + '&tl=' + targetLang + '&dt=t&q=' + encodeURIComponent(word);
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' + sourceLang +
+      '&tl=' + targetLang + '&dt=t&q=' + encodeURIComponent(text);
     const res = await fetch(url);
     if (!res.ok) throw new Error('bad status');
     const data = await res.json();
     const translated = data[0].map(x => x[0]).join('');
-    if (myToken !== requestToken) return; // пользователь уже тапнул другое слово (или сменил язык)
+    if (myToken !== requestToken) return; // уже тапнули другое слово или сменили язык
     translateCache[key] = translated;
     saveTranslateCache();
     tEl.textContent = translated;
     tEl.className = 'tp-translation';
-  } catch (err) {
+  } catch {
     if (myToken !== requestToken) return;
     tEl.textContent = 'Не удалось перевести — проверь связь и попробуй ещё раз';
     tEl.className = 'tp-translation error';
   }
 }
 
-function closePanel() {
-  document.getElementById('backdrop').classList.remove('show');
-  document.getElementById('panel').classList.remove('show');
-}
-
 function updateSaveButton() {
   const btn = document.getElementById('tpSave');
   const already = savedWords.some(w => w.word === currentText);
-  btn.textContent = already ? '✓ Сохранено' : '★ Сохранить слово';
-  btn.classList.toggle('saved', already);
+  btn.innerHTML = already ? icon('check') + 'Сохранено' : icon('star') + 'Сохранить слово';
+  btn.classList.toggle('done', already);
 }
 
 function saveCurrentWord() {
-  if (!currentText) return;
-  if (savedWords.some(w => w.word === currentText)) return;
-  const translation = document.getElementById('tpTranslation').textContent;
-  savedWords.push({ word: currentText, translation, ts: Date.now() });
+  if (!currentText || savedWords.some(w => w.word === currentText)) return;
+  savedWords.push({
+    word: currentText,
+    translation: document.getElementById('tpTranslation').textContent,
+    ts: Date.now(),
+  });
   persistSavedWords();
   updateSaveButton();
 }
 
 // ══════════════════════════════════════════════════════════════
-// СОХРАНЁННЫЕ СЛОВА
+// ЗАКЛАДКИ
 // ══════════════════════════════════════════════════════════════
-function renderSavedList() {
-  const list = document.getElementById('savedList');
+async function addBookmark() {
+  if (!currentBookId) return;
+  const bookmark = {
+    id: newId(),
+    scrollPos: window.scrollY,
+    page: currentPageNumber(),
+    pageCount: currentPages.length || currentBook.pageCount || 0,
+    createdAt: Date.now(),
+  };
+  currentBook.bookmarks = (currentBook.bookmarks || []).concat(bookmark);
+  await idbUpdateBook(currentBookId, { bookmarks: currentBook.bookmarks });
+
+  const btn = document.getElementById('chromeBookmark');
+  btn.innerHTML = icon('bookmarkFill');
+  btn.classList.add('on');
+  clearTimeout(addBookmark._t);
+  addBookmark._t = setTimeout(() => {
+    btn.innerHTML = icon('bookmark');
+    btn.classList.remove('on');
+  }, 1100);
+}
+
+async function renderBookmarks() {
+  const books = await idbGetAllBooks();
+  const list = document.getElementById('bookmarksList');
+  const all = books.flatMap(b => (b.bookmarks || []).map(bm => ({ bm, book: b })));
   list.innerHTML = '';
-  if (!savedWords.length) {
-    list.innerHTML = '<div class="saved-empty">Пока пусто.<br>Открой книгу, тапни слово и нажми «★ Сохранить слово».</div>';
+  if (!all.length) {
+    list.innerHTML = `<div class="empty">
+      <div class="empty-icon">${icon('bookmark')}</div>
+      <div class="empty-title">Закладок пока нет</div>
+      <div>Во время чтения нажми иконку закладки в верхней панели, чтобы запомнить место.</div>
+    </div>`;
     return;
   }
+  all.sort((a, b) => b.bm.createdAt - a.bm.createdAt).forEach(({ bm, book }) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    const main = document.createElement('div');
+    main.className = 'row-main';
+    main.innerHTML = `<div class="row-title"></div>
+      <div class="row-sub">Стр. ${bm.page}${bm.pageCount ? ' из ' + bm.pageCount : ''} · ${fmtDate(bm.createdAt)}</div>`;
+    main.querySelector('.row-title').textContent = book.title || stripExt(book.name);
+    main.addEventListener('click', async () => {
+      await openBook(book.id);
+      requestAnimationFrame(() => window.scrollTo(0, bm.scrollPos));
+    });
+    const del = document.createElement('button');
+    del.className = 'row-del';
+    del.type = 'button';
+    del.setAttribute('aria-label', 'Удалить закладку');
+    del.innerHTML = icon('trash', 'icon-sm');
+    del.addEventListener('click', async () => {
+      const rest = (book.bookmarks || []).filter(x => x.id !== bm.id);
+      await idbUpdateBook(book.id, { bookmarks: rest });
+      if (currentBookId === book.id) currentBook.bookmarks = rest;
+      renderBookmarks();
+    });
+    row.append(main, del);
+    list.append(row);
+  });
+}
+
+function fmtDate(ts) {
+  return new Date(ts).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+// ══════════════════════════════════════════════════════════════
+// ЗАМЕТКИ И СЛОВА
+// ══════════════════════════════════════════════════════════════
+let notesTab = 'notes'; // 'notes' | 'words'
+
+async function renderNotes() {
+  const body = document.getElementById('notesBody');
+  const chips = document.getElementById('notesChips');
+  const switcher = document.getElementById('notesTabSwitch');
+  chips.style.display = 'none';
+  switcher.textContent = notesTab === 'notes' ? 'СЛОВА' : 'ВЫДЕЛЕНИЯ';
+  body.innerHTML = '';
+
+  if (notesTab === 'words') return renderWordsList(body);
+
+  const books = await idbGetAllBooks();
+  const all = books.flatMap(b => (b.notes || []).map(nt => ({ nt, book: b })));
+  if (!all.length) {
+    body.innerHTML = `<div class="empty">
+      <div class="empty-icon">${icon('note')}</div>
+      <div class="empty-title">Заметок пока нет</div>
+      <div>Выдели текст в книге и коснись цветного кружка — фрагмент подсветится маркером и попадёт сюда.</div>
+    </div>`;
+    return;
+  }
+  const list = document.createElement('div');
+  list.className = 'list';
+  all.sort((a, b) => b.nt.createdAt - a.nt.createdAt).forEach(({ nt, book }) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    const main = document.createElement('div');
+    main.className = 'row-main';
+    main.innerHTML = `
+      <div class="row-quote" style="border-color:${hlHex(nt.color)}"></div>
+      <div class="row-note"></div>
+      <div class="row-sub"><span class="bk"></span> · стр. ${nt.page} · ${fmtDate(nt.createdAt)}</div>`;
+    main.querySelector('.row-quote').textContent = nt.text;
+    const cm = main.querySelector('.row-note');
+    if (nt.comment) cm.textContent = nt.comment; else cm.remove();
+    main.querySelector('.bk').textContent = book.title || stripExt(book.name);
+    main.addEventListener('click', async () => {
+      await openBook(book.id);
+      const target = currentPages[nt.page - 1];
+      if (target) requestAnimationFrame(() => target.wrap.scrollIntoView({ block: 'center' }));
+    });
+    const del = document.createElement('button');
+    del.className = 'row-del';
+    del.type = 'button';
+    del.setAttribute('aria-label', 'Удалить заметку');
+    del.innerHTML = icon('trash', 'icon-sm');
+    del.addEventListener('click', async () => {
+      const rest = (book.notes || []).filter(x => x.id !== nt.id);
+      await idbUpdateBook(book.id, { notes: rest });
+      if (currentBookId === book.id) { currentBook.notes = rest; redrawAllHighlights(); }
+      renderNotes();
+    });
+    row.append(main, del);
+    list.append(row);
+  });
+  body.append(list);
+}
+
+function renderWordsList(body) {
+  if (!savedWords.length) {
+    body.innerHTML = `<div class="empty">
+      <div class="empty-icon">${icon('star')}</div>
+      <div class="empty-title">Слов пока нет</div>
+      <div>Тапни слово в книге и нажми «Сохранить слово».</div>
+    </div>`;
+    return;
+  }
+  const list = document.createElement('div');
+  list.className = 'list';
   savedWords.slice().reverse().forEach(entry => {
     const row = document.createElement('div');
-    row.className = 'saved-row';
-    const w = document.createElement('div'); w.className = 'saved-word'; w.textContent = entry.word;
-    const t = document.createElement('div'); t.className = 'saved-translation'; t.textContent = entry.translation;
+    row.className = 'row';
+    const main = document.createElement('div');
+    main.className = 'row-main';
+    main.innerHTML = `<div class="row-title"></div><div class="row-sub"></div>`;
+    main.querySelector('.row-title').textContent = entry.word;
+    main.querySelector('.row-sub').textContent = entry.translation;
     const del = document.createElement('button');
-    del.className = 'saved-del'; del.textContent = '×'; del.type = 'button';
-    del.setAttribute('aria-label', `Удалить «${entry.word}»`);
+    del.className = 'row-del';
+    del.type = 'button';
+    del.setAttribute('aria-label', 'Удалить слово');
+    del.innerHTML = icon('trash', 'icon-sm');
     del.addEventListener('click', () => {
       savedWords = savedWords.filter(x => x.ts !== entry.ts);
       persistSavedWords();
-      renderSavedList();
+      renderNotes();
     });
-    row.append(w, t, del);
-    list.appendChild(row);
+    row.append(main, del);
+    list.append(row);
   });
+  const copy = document.createElement('button');
+  copy.className = 'btn-outline';
+  copy.style.cssText = 'margin:16px auto 0;display:flex';
+  copy.innerHTML = icon('copy') + 'Скопировать список';
+  copy.addEventListener('click', copySavedWords);
+  const fb = document.createElement('div');
+  fb.className = 'copy-feedback';
+  fb.id = 'copyFeedback';
+  body.append(list, copy, fb);
 }
 
 async function copySavedWords() {
@@ -950,7 +1662,7 @@ async function copySavedWords() {
   const fb = document.getElementById('copyFeedback');
   try {
     await navigator.clipboard.writeText(textOut);
-    fb.textContent = 'Скопировано ✓';
+    fb.textContent = 'Скопировано';
   } catch {
     fb.textContent = 'Не удалось скопировать — выдели и скопируй вручную';
   }
@@ -958,102 +1670,122 @@ async function copySavedWords() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// «ПРОЧИТАНО»
+// НАСТРОЙКИ
 // ══════════════════════════════════════════════════════════════
-async function markFinished() {
-  if (!currentBookId) return;
-  await idbUpdateBook(currentBookId, { status: 'finished' });
-  libraryShelf = 'finished';
-  showLibrary();
-}
-
-// ══════════════════════════════════════════════════════════════
-// ЗАКЛАДКИ (несколько, в любом месте книги)
-// ══════════════════════════════════════════════════════════════
-async function addBookmark() {
-  if (!currentBookId) return;
-  const book = await idbGetBook(currentBookId);
-  if (!book) return;
-  const bookmark = {
-    id: newId('bm'),
-    scrollPos: window.scrollY,
-    pageLabel: 'стр. ' + currentPageNumber() + ' из ' + (currentPages.length || book.pageCount || '?'),
-    createdAt: Date.now(),
-  };
-  const bookmarks = (book.bookmarks || []).concat(bookmark);
-  await idbUpdateBook(currentBookId, { bookmarks });
-
-  // Фиксированный ярлык на возврат (а не текущий textContent) — иначе
-  // при повторном тапе до истечения таймера залипает на «✓» навсегда.
-  const btn = document.getElementById('bookmarkBtn');
-  btn.textContent = '✓';
-  clearTimeout(bookmarkFeedbackTimer);
-  bookmarkFeedbackTimer = setTimeout(() => { btn.textContent = '🔖'; }, 900);
-}
-
-async function openBookmarks() {
-  if (!currentBookId) return;
-  closePanel();
-  showScreen('view-bookmarks');
-  await renderBookmarksList();
-}
-
-async function renderBookmarksList() {
-  const list = document.getElementById('bookmarksList');
-  list.innerHTML = '';
-  const book = currentBookId ? await idbGetBook(currentBookId) : null;
-  const marks = (book && book.bookmarks) || [];
-  if (!marks.length) {
-    list.innerHTML = '<div class="saved-empty">Пока нет закладок.<br>Нажми 🔖 во время чтения, чтобы добавить.</div>';
-    return;
-  }
-  marks.slice().reverse().forEach(bm => {
-    const row = document.createElement('div');
-    row.className = 'saved-row bookmark-row';
-    const w = document.createElement('div'); w.className = 'saved-word'; w.textContent = bm.pageLabel || 'Закладка';
-    const t = document.createElement('div'); t.className = 'saved-translation';
-    t.textContent = new Date(bm.createdAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    const del = document.createElement('button');
-    del.className = 'saved-del'; del.textContent = '×'; del.type = 'button';
-    del.setAttribute('aria-label', `Удалить закладку «${bm.pageLabel}»`);
-    del.addEventListener('click', async (ev) => {
-      ev.stopPropagation();
-      const b = await idbGetBook(currentBookId);
-      const bookmarks = (b.bookmarks || []).filter(x => x.id !== bm.id);
-      await idbUpdateBook(currentBookId, { bookmarks });
-      renderBookmarksList();
+function renderSettings() {
+  const themeRow = document.getElementById('themeRow');
+  themeRow.innerHTML = '';
+  THEMES.forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'theme-card' + (t.code === theme ? ' active' : '');
+    b.type = 'button';
+    b.innerHTML = `<div class="theme-swatch" style="background:${t.bg};color:${t.fg}">Aa</div>
+      <div class="theme-name">${t.name}</div>`;
+    b.addEventListener('click', () => {
+      theme = t.code;
+      localStorage.setItem(STORAGE_THEME, theme);
+      applyAppearance();
+      renderSettings();
     });
-    row.append(w, t, del);
-    row.addEventListener('click', (ev) => {
-      if (ev.target.closest('.saved-del')) return;
-      jumpToBookmark(bm);
-    });
-    list.appendChild(row);
+    themeRow.append(b);
   });
+
+  const accentRow = document.getElementById('accentRow');
+  accentRow.innerHTML = '';
+  ACCENTS.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'accent-dot' + (c === accent ? ' active' : '');
+    b.type = 'button';
+    b.style.background = c;
+    b.setAttribute('aria-label', 'Акцентный цвет');
+    b.addEventListener('click', () => {
+      accent = c;
+      localStorage.setItem(STORAGE_ACCENT, accent);
+      applyAppearance();
+      renderSettings();
+    });
+    accentRow.append(b);
+  });
+
+  document.getElementById('zoomValue').textContent = zoom + '%';
+  document.getElementById('brightnessSlider').value = brightness;
+  renderLangToggles();
 }
 
-function jumpToBookmark(bm) {
-  showScreen('view-pdf');
-  requestAnimationFrame(() => window.scrollTo(0, bm.scrollPos));
+function setZoom(next) {
+  zoom = Math.max(70, Math.min(200, next));
+  localStorage.setItem(STORAGE_ZOOM, String(zoom));
+  document.getElementById('zoomValue').textContent = zoom + '%';
 }
+
+// ══════════════════════════════════════════════════════════════
+// ШТОРКИ
+// ══════════════════════════════════════════════════════════════
+function openSheet(id) {
+  document.querySelectorAll('.sheet').forEach(s => s.classList.toggle('show', s.id === id));
+  document.getElementById('backdrop').classList.add('show');
+}
+function closeAllSheets() {
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show'));
+  document.getElementById('backdrop').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════════════
+// СОБЫТИЯ
+// ══════════════════════════════════════════════════════════════
+document.getElementById('backdrop').addEventListener('click', closeAllSheets);
+document.getElementById('tpClose').addEventListener('click', closeAllSheets);
+document.getElementById('tpSave').addEventListener('click', saveCurrentWord);
+document.getElementById('selTranslate').addEventListener('click', translateSelection);
+document.getElementById('addBookBtn').addEventListener('click', pickFile);
+document.getElementById('pdfFileInput').addEventListener('change', e => handlePdfFile(e.target.files[0]));
+document.getElementById('chromeBack').addEventListener('click', () => showTab('view-library'));
+document.getElementById('chromeBookmark').addEventListener('click', addBookmark);
+document.getElementById('chromeMenu').addEventListener('click', () => currentBookId && openBookSheet(currentBookId));
+document.getElementById('notesTabSwitch').addEventListener('click', () => {
+  notesTab = notesTab === 'notes' ? 'words' : 'notes';
+  renderNotes();
+});
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  renderLibrary();
+});
+document.getElementById('zoomPlus').addEventListener('click', () => setZoom(zoom + 10));
+document.getElementById('zoomMinus').addEventListener('click', () => setZoom(zoom - 10));
+document.getElementById('brightnessSlider').addEventListener('input', e => {
+  brightness = parseInt(e.target.value, 10);
+  localStorage.setItem(STORAGE_BRIGHTNESS, String(brightness));
+  applyAppearance();
+});
+document.getElementById('noteSave').addEventListener('click', async () => {
+  if (!editingNote) return;
+  editingNote.comment = document.getElementById('noteInput').value.trim();
+  await persistNote();
+  closeAllSheets();
+});
+document.getElementById('noteDelete').addEventListener('click', async () => {
+  if (!editingNote) return;
+  const rest = (currentBook.notes || []).filter(n => n.id !== editingNote.id);
+  currentBook.notes = rest;
+  await idbUpdateBook(currentBookId, { notes: rest });
+  editingNote = null;
+  closeAllSheets();
+  redrawAllHighlights();
+});
 
 // ══════════════════════════════════════════════════════════════
 // СТАРТ
 // ══════════════════════════════════════════════════════════════
-window.handlePdfFile = handlePdfFile;
-window.pickFile = pickFile;
-window.showLibrary = showLibrary;
-window.openSaved = openSaved;
-window.closePanel = closePanel;
-window.saveCurrentWord = saveCurrentWord;
-window.copySavedWords = copySavedWords;
-window.markFinished = markFinished;
-window.addBookmark = addBookmark;
-window.openBookmarks = openBookmarks;
-window.translateSelection = translateSelection;
-
-persistSavedWords(); // обновить счётчик в шапке при загрузке
-showLibrary(); // библиотека — стартовый экран (книг может быть несколько)
+document.getElementById('searchIcon').innerHTML = icon('search');
+document.getElementById('addBookBtn').innerHTML = icon('plus');
+document.getElementById('chromeBack').innerHTML = icon('back');
+document.getElementById('chromeBookmark').innerHTML = icon('bookmark');
+document.getElementById('chromeMenu').innerHTML = icon('more');
+document.getElementById('tpClose').innerHTML = icon('close', 'icon-sm');
+applyAppearance();
+renderSelColors();
+renderTabbar();
+showTab('view-library');
 </script>
 </body>
 </html>
