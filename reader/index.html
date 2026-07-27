@@ -1397,7 +1397,10 @@ function translateSelection() {
   const sel = pendingSelection;
   document.getElementById('selToolbar').classList.remove('show');
   window.getSelection().removeAllRanges();
-  if (sel && sel.text) openPanel(sel.text);
+  if (sel && sel.text) {
+    const info = sel.map && sel.start !== undefined ? { map: sel.map, start: sel.start, end: sel.end } : null;
+    openPanel(sel.text, false, info);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1440,13 +1443,17 @@ async function persistNote() {
 // ПЕРЕВОД
 // ══════════════════════════════════════════════════════════════
 let currentText = null;
+let panelIsWord = false; // тап по одному слову → «Сохранить слово», выделение фразы/абзаца → «Сохранить в заметки»
+let panelSelectionInfo = null; // {map, start, end} — для выделения, чтобы заметку можно было подсветить на странице
 let requestToken = 0;
 
 // showOriginal — только для тапа по одному слову: сам оригинал уже виден
 // прямо на странице (для выделения — как подсветка, для обычного слова —
 // нет), так что дублировать длинный выделенный отрывок в шторке незачем.
-async function openPanel(text, showOriginal) {
+async function openPanel(text, showOriginal, selectionInfo) {
   currentText = text;
+  panelIsWord = !!showOriginal;
+  panelSelectionInfo = selectionInfo || null;
   const wordEl = document.getElementById('tpWord');
   wordEl.textContent = text;
   wordEl.style.display = showOriginal ? '' : 'none';
@@ -1491,9 +1498,15 @@ async function translateText(text) {
 
 function updateSaveButton() {
   const btn = document.getElementById('tpSave');
-  const already = savedWords.some(w => w.word === currentText);
-  btn.innerHTML = already ? icon('check') + 'Сохранено' : icon('star') + 'Сохранить слово';
-  btn.classList.toggle('done', already);
+  if (panelIsWord) {
+    const already = savedWords.some(w => w.word === currentText);
+    btn.innerHTML = already ? icon('check') + 'Сохранено' : icon('star') + 'Сохранить слово';
+    btn.classList.toggle('done', already);
+  } else {
+    const already = ((currentBook && currentBook.notes) || []).some(n => n.text === currentText);
+    btn.innerHTML = already ? icon('check') + 'Сохранено' : icon('note') + 'Сохранить в заметки';
+    btn.classList.toggle('done', already);
+  }
 }
 
 function saveCurrentWord() {
@@ -1505,6 +1518,32 @@ function saveCurrentWord() {
   });
   persistSavedWords();
   updateSaveButton();
+}
+
+// Сохраняем и оригинал (currentText), и перевод (comment) — заметка получается
+// самодостаточной, без похода обратно в книгу за исходной фразой.
+async function saveCurrentNote() {
+  if (!currentText || !currentBookId) return;
+  if ((currentBook.notes || []).some(n => n.text === currentText)) return;
+  const info = panelSelectionInfo;
+  const note = {
+    id: newId(),
+    page: (info && info.map && info.map.page) || currentPageNumber(),
+    startOffset: info ? info.start : undefined,
+    endOffset: info ? info.end : undefined,
+    text: currentText,
+    color: 'yellow',
+    comment: document.getElementById('tpTranslation').textContent,
+    createdAt: Date.now(),
+  };
+  currentBook.notes = (currentBook.notes || []).concat(note);
+  await idbUpdateBook(currentBookId, { notes: currentBook.notes });
+  if (info && info.map) drawHighlights(info.map);
+  updateSaveButton();
+}
+
+function handleTpSave() {
+  if (panelIsWord) saveCurrentWord(); else saveCurrentNote();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1767,7 +1806,7 @@ function closeAllSheets() {
 // ══════════════════════════════════════════════════════════════
 document.getElementById('backdrop').addEventListener('click', closeAllSheets);
 document.getElementById('tpClose').addEventListener('click', closeAllSheets);
-document.getElementById('tpSave').addEventListener('click', saveCurrentWord);
+document.getElementById('tpSave').addEventListener('click', handleTpSave);
 document.getElementById('selTranslate').addEventListener('click', translateSelection);
 document.getElementById('addBookBtn').addEventListener('click', pickFile);
 document.getElementById('pdfFileInput').addEventListener('change', e => handlePdfFile(e.target.files[0]));
