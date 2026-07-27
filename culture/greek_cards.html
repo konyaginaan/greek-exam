@@ -107,6 +107,25 @@
     flex-shrink: 0;
   }
 
+  .btn-home-screen {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 0.9rem 1rem;
+    border-radius: 14px;
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-home-screen:active { opacity: 0.6; }
+  .btn-home-screen:disabled { cursor: default; opacity: 0.6; }
+
   /* ══ СТРАНИЦА РАЗДЕЛА ══ */
   .page-wrap {
     display: flex;
@@ -149,7 +168,14 @@
     box-shadow: 0 2px 12px rgba(0,0,0,0.07);
   }
   .deck-name { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-  .deck-meta { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+  .deck-meta { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .deck-progress { margin-bottom: 14px; }
+  .deck-progress-bar {
+    width: 100%; height: 4px; background: var(--border);
+    border-radius: 2px; overflow: hidden; margin-bottom: 4px;
+  }
+  .deck-progress-fill { height: 100%; background: var(--lime); border-radius: 2px; transition: width 0.3s; }
+  .deck-progress-text { font-size: 11px; color: var(--muted); font-weight: 600; }
   .deck-btns { display: flex; gap: 8px; }
   .deck-btn {
     flex: 1; padding: 10px 6px;
@@ -403,6 +429,8 @@
       </div>
       <div class="section-arrow">›</div>
     </button>
+
+    <button class="btn-home-screen" id="btnAddHomeScreen" onclick="addToHomeScreen()">📲 Добавить на домашний экран</button>
   </div>
 </div>
 
@@ -786,6 +814,31 @@
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
+// "Добавить на домашний экран" — нативная функция Telegram Mini Apps (Bot API 8.0+).
+// Вне Telegram, в старых клиентах и после того как ярлык уже добавлен, кнопка скрыта.
+function addToHomeScreen() {
+  if (!tg) return;
+  try { tg.addToHomeScreen(); } catch (e) { console.warn('addToHomeScreen failed', e); }
+}
+// Как и CloudStorage, методы Telegram WebApp, которых нет в клиенте, не просто
+// молча ничего не делают — они бросают исключение, поэтому здесь тот же try/catch.
+function initHomeScreenButton() {
+  if (!tg) return;
+  const btn = document.getElementById('btnAddHomeScreen');
+  try {
+    if (typeof tg.checkHomeScreenStatus !== 'function') return;
+    tg.checkHomeScreenStatus(status => {
+      if (status === 'unsupported' || status === 'added') return;
+      btn.style.display = 'flex';
+    });
+    tg.onEvent('homeScreenAdded', () => {
+      btn.textContent = '✓ Добавлено на домашний экран';
+      btn.disabled = true;
+    });
+  } catch (e) { console.warn('initHomeScreenButton failed', e); }
+}
+initHomeScreenButton();
+
 const ROUND_SIZE = 30;
 
 // ── ДАННЫЕ: СЛОВА ──
@@ -1038,6 +1091,7 @@ let backTarget = 'screen-section-exam';
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if (id === 'screen-section-exam' || id === 'screen-section-topics') renderDeckProgress();
 }
 
 function showSection(name) {
@@ -2412,6 +2466,31 @@ document.querySelectorAll('.deck-count[data-deck]').forEach(span => {
   const n = isCard ? deckCardCount(span.dataset.deck) : deckWordCount(span.dataset.deck);
   span.textContent = n + ' ' + pluralRu(n, COUNT_UNITS[isCard ? 'card' : 'word']);
 });
+
+// Прогресс по колоде = выучено (mastered_<id>) / общее число слов в колоде,
+// а не от текущего рабочего набора раунда — тот меняется каждую сессию и
+// не отражает, сколько слов реально закрыто с начала.
+async function renderDeckProgress() {
+  const spans = document.querySelectorAll('.deck-count[data-deck]:not([data-unit="card"])');
+  await Promise.all([...spans].map(async span => {
+    const id = span.dataset.deck;
+    const total = deckWordCount(id);
+    if (!total) return;
+    const n = (await loadMastered(id)).length;
+    const pct = Math.min(100, Math.round((n / total) * 100));
+    const meta = span.closest('.deck-meta');
+    let prog = meta.nextElementSibling;
+    if (!prog || !prog.classList.contains('deck-progress')) {
+      prog = document.createElement('div');
+      prog.className = 'deck-progress';
+      prog.innerHTML = '<div class="deck-progress-bar"><div class="deck-progress-fill"></div></div><div class="deck-progress-text"></div>';
+      meta.after(prog);
+    }
+    prog.querySelector('.deck-progress-fill').style.width = pct + '%';
+    prog.querySelector('.deck-progress-text').textContent = `${n} / ${total} выучено`;
+  }));
+}
+renderDeckProgress();
 </script>
 </body>
 </html>
