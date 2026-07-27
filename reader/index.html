@@ -188,15 +188,17 @@
   .pdf-page {
     position: relative; margin: 0 auto 14px; background: #fff;
     box-shadow: 0 2px 14px var(--shadow); border-radius: 4px; overflow: hidden;
-    filter: var(--page-filter);
   }
-  .pdf-page canvas { display: block; width: 100%; height: 100%; position: relative; z-index: 0; }
+  /* Фильтр инверсии — только на самой картинке страницы, иначе в тёмной
+     теме он выворачивает и цвет маркера/выделения, делая их грязными. */
+  .pdf-page canvas { display: block; width: 100%; height: 100%; position: relative; z-index: 0; filter: var(--page-filter); }
   .pdf-page-loading {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     color: var(--muted); font-size: 13px;
   }
   .highlight-layer { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
   .hl-rect { position: absolute; border-radius: 2px; }
+  .hl-rect-preview { background: color-mix(in srgb, var(--accent) 32%, transparent); }
   /* Официальные правила pdf.js для текстового слоя — без них слой либо
      виден поверх картинки, либо не совпадает по размеру с глифами. */
   .textLayer {
@@ -209,7 +211,9 @@
     cursor: pointer; transform-origin: 0% 0%;
     -webkit-user-select: text; user-select: text; -webkit-touch-callout: default;
   }
-  .textLayer ::selection { background: color-mix(in srgb, var(--accent) 32%, transparent); }
+  /* Нативная ::selection режется по обрывкам span'ов pdf.js и выглядит рвано —
+     прячем её и рисуем свою подсветку по строкам поверх highlight-layer (см. renderSelectionPreview). */
+  .textLayer ::selection { background: transparent; }
 
   .reader-chrome {
     position: fixed; left: 0; right: 0; top: 0; z-index: 30;
@@ -1330,6 +1334,27 @@ function wordAtPoint(x, y, map) {
 // ══════════════════════════════════════════════════════════════
 let pendingSelection = null; // {text, map, start, end}
 
+function clearSelectionPreview() {
+  document.querySelectorAll('.hl-rect-preview').forEach(el => el.remove());
+}
+
+// Своя подсветка по строкам вместо рваной нативной ::selection — та же
+// склейка прямоугольников, что и для сохранённых заметок (см. drawHighlights).
+function renderSelectionPreview(map, range) {
+  clearSelectionPreview();
+  if (!map || !map.hlLayer) return;
+  const base = map.wrap.getBoundingClientRect();
+  mergeLineRects(Array.from(range.getClientRects())).forEach(r => {
+    const d = document.createElement('div');
+    d.className = 'hl-rect hl-rect-preview';
+    d.style.cssText = `left:${r.left - base.left - 2}px;top:${r.top - base.top}px;width:${r.right - r.left + 4}px;height:${r.bottom - r.top}px;`;
+    map.hlLayer.appendChild(d);
+  });
+}
+
+// Только считаем и подсвечиваем выделение здесь — панель с цветами и
+// «Перевести» показываем отдельно, по окончании жеста (см. pointerup ниже),
+// иначе она дёргается и переставляется на каждый чих во время протяжки пальцем.
 function handleSelectionChange() {
   const sel = window.getSelection();
   const bar = document.getElementById('selToolbar');
@@ -1341,6 +1366,7 @@ function handleSelectionChange() {
   if (!text || !tlayer) {
     bar.classList.remove('show');
     pendingSelection = null;
+    clearSelectionPreview();
     return;
   }
 
@@ -1348,8 +1374,15 @@ function handleSelectionChange() {
   const range = sel.getRangeAt(0);
   const offsets = map ? offsetsFromRange(map, range) : null;
   pendingSelection = { text, map, ...(offsets || {}) };
+  if (map) renderSelectionPreview(map, range);
+}
+document.addEventListener('selectionchange', handleSelectionChange);
 
-  const rect = range.getBoundingClientRect();
+function positionSelToolbar() {
+  const sel = window.getSelection();
+  if (!pendingSelection || !sel || sel.isCollapsed || !sel.rangeCount) return;
+  const bar = document.getElementById('selToolbar');
+  const rect = sel.getRangeAt(0).getBoundingClientRect();
   bar.classList.add('show');
   const bw = bar.offsetWidth, bh = bar.offsetHeight;
   let top = rect.top - bh - 10;
@@ -1359,7 +1392,7 @@ function handleSelectionChange() {
   bar.style.top = top + 'px';
   bar.style.left = left + 'px';
 }
-document.addEventListener('selectionchange', handleSelectionChange);
+document.addEventListener('pointerup', () => requestAnimationFrame(positionSelToolbar));
 
 // Нажатие на панель не должно сначала снять выделение (обычное поведение
 // браузера на pointerdown вне выделенного текста) — иначе к моменту click
